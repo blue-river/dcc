@@ -1,0 +1,78 @@
+byte bar;
+byte baz;
+
+byte test(byte param)
+{
+	byte variable;
+
+	variable = 2 + foo.bar - 5;
+	foo.baz = variable + 3;
+	// comment
+
+	repeat(foo.bar - 20)
+	{
+		loopy(50);
+	}
+
+	return foo() - (foo.baz + param);
+}
+
+byte foo()
+{
+	donothing();
+	return 42;
+}
+
+void donothing()
+{
+	// fall out
+}
+
+void loopy(byte times)
+{
+	loop
+	{
+		if (times == 0)
+		{
+			break;
+		}
+
+		times = times - 1;
+		continue;
+
+		// unreached!
+		times = times + 1;
+	}
+}
+
+void returner()
+{
+	return;
+}
+
+void empty()
+{
+}
+
+void main()
+{
+	foo.bar = test(4 * 5);
+	donothing();
+	returner();
+	empty();
+
+	if (4 == 5)
+	{
+		if (3 != foo.baz)
+		{
+			foo.bar = 21;
+		}
+	}
+	else
+	{
+		if (foo.bar != foo.baz)
+		{
+			foo.baz = 4;
+		}
+	}
+}
