@@ -11,7 +11,6 @@ void main()
 	interrupts.enable();
 
 	foo.main();
-	sfr.ACC = iets;
 
 	boolean.comparisons(42 | ~0x20 & 0b1010);
 

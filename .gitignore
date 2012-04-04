@@ -1,0 +1,8 @@
+*.pyc
+compiler/dcparsetab.py
+
+output.asm
+parser.out
+
+*.swp
+.DS_Store

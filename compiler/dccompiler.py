@@ -4,11 +4,11 @@ import json
 
 from asmoptimizer import AsmOptimizer
 from compilererror import CompilerError
-from scconstants import Constants
-from scparser import SCParser
+from dcconstants import Constants
+from dcparser import DCParser
 import asmgenerator
 
-class SCCompiler(object):
+class DCCompiler(object):
 
 	def compile(self, options):
 		modules = Constants() # dict
@@ -99,7 +99,7 @@ class SCCompiler(object):
 	def parse(self, options, modulename):
 		'''Parses the input and returns a syntax tree.'''
 
-		filename = modulename + '.sc'
+		filename = modulename + '.dc'
 
 		inputFile = None
 		if os.path.isfile(filename):
@@ -117,7 +117,7 @@ class SCCompiler(object):
 		input = inputFile.read()
 		inputFile.close()
 
-		return SCParser(options).parse(filename, modulename, input)
+		return DCParser(options).parse(filename, modulename, input)
 
 	def printAsmStatistics(self, program):
 		instructions, codeBytes, realBytes = asmgenerator.count(program)

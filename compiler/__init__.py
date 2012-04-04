@@ -1,5 +1,5 @@
 from asmgenerator import Asm, nextlabel
 from compilererror import CompilerError
-from sccompiler import SCCompiler
-from scparser import SCParser
-from sctokenizer import SCTokenizer
+from dccompiler import DCCompiler
+from dcparser import DCParser
+from dctokenizer import DCTokenizer

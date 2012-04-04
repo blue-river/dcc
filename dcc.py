@@ -7,11 +7,11 @@ import json
 
 from optparse import OptionParser, OptionGroup
 
-from compiler import SCCompiler, CompilerError
+from compiler import DCCompiler, CompilerError
 
 def main():
 	usage = 'usage: %prog [options]'
-	description = 'Compiles main.sc and its dependencies to assembly.'
+	description = 'Compiles main.dc and its dependencies to assembly.'
 	epilog = 'Report bugs and feature requests to zr40.nl@gmail.com'
 	version = '%prog 0.3 dev'
 	parser = OptionParser(usage=usage, description=description, epilog=epilog, version=version)
@@ -33,11 +33,11 @@ def main():
 	if args:
 		parser.error("no such option: %s" % args[0])
 
-	if not os.path.exists('main.sc'):
-		parser.error("'main.sc' does not exist")
+	if not os.path.exists('main.dc'):
+		parser.error("'main.dc' does not exist")
 
 	def compile():
-		return SCCompiler().compile(options)
+		return DCCompiler().compile(options)
 
 	if options.debugCompiler:
 		asm, debugData = compile()
@@ -50,9 +50,6 @@ def main():
 
 	with open('output.asm', 'w') as outputfile:
 		outputfile.write(asm)
-
-	with open('output.scdebug', 'w') as outputfile:
-		outputfile.write(debugData)
 
 if __name__ == '__main__':
 	main()

@@ -2,7 +2,7 @@ import ply.lex as lex
 
 from compilererror import CompilerError
 
-class SCTokenizer(object):
+class DCTokenizer(object):
 
 	def __init__(self):
 		self.lexer = lex.lex(module=self)

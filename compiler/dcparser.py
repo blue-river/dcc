@@ -3,15 +3,15 @@ import os
 import ply.yacc as yacc
 
 from compilererror import CompilerError
-from sctokenizer import SCTokenizer
+from dctokenizer import DCTokenizer
 from syntaxitems import *
 
-class SCParser(object):
+class DCParser(object):
 
 	def __init__(self, options):
-		self.tokenizer = SCTokenizer()
+		self.tokenizer = DCTokenizer()
 		self.tokens = self.tokenizer.tokens
-		self.parser = yacc.yacc(module=self, debug=options.debugParser, tabmodule='compiler.scparsetab', outputdir=os.path.dirname(os.path.realpath(__file__)))
+		self.parser = yacc.yacc(module=self, debug=options.debugParser, tabmodule='compiler.dcparsetab', outputdir=os.path.dirname(os.path.realpath(__file__)))
 
 		self.foundModuleReferences = set()
 

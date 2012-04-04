@@ -1,0 +1,90 @@
+{
+    "memoryAddresses": {
+        "main.counter": [
+            "external", 
+            16384
+        ], 
+        "main.baz": [
+            "internal", 
+            14
+        ], 
+        "foo.baz": [
+            "external", 
+            16386
+        ], 
+        "foo.bar": [
+            "external", 
+            16385
+        ], 
+        "boolean.foo": [
+            "internal", 
+            15
+        ]
+    }, 
+    "codeAddressAliases": [
+        [
+            0, 
+            "boot code"
+        ], 
+        [
+            11, 
+            "interrupt vector TF0"
+        ], 
+        [
+            128, 
+            "initialisation"
+        ], 
+        [
+            143, 
+            "main exited"
+        ], 
+        [
+            145, 
+            "foo.donothing"
+        ], 
+        [
+            146, 
+            "boolean.comparisons"
+        ], 
+        [
+            297, 
+            "foo.foo"
+        ], 
+        [
+            301, 
+            "compilerservices.reset"
+        ], 
+        [
+            302, 
+            "foo.loopy"
+        ], 
+        [
+            334, 
+            "foo.main"
+        ], 
+        [
+            431, 
+            "interrupts.enable"
+        ], 
+        [
+            432, 
+            "foo.empty"
+        ], 
+        [
+            433, 
+            "foo.returner"
+        ], 
+        [
+            433, 
+            "interrupts.handler_TF0"
+        ], 
+        [
+            434, 
+            "main.main"
+        ], 
+        [
+            591, 
+            "foo.test"
+        ]
+    ]
+}

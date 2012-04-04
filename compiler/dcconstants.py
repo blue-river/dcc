@@ -1,9 +1,8 @@
-from .data import sfr
 from asmgenerator import Asm
 from syntaxitems import DataField, Module, PredefinedFunction
 
 def Constants():
-	return {'sfr': SFRModule(), 'compilerservices': CompilerServicesModule()}
+	return {'compilerservices': CompilerServicesModule()}
 
 def CompilerServicesModule():
 	functions = []
