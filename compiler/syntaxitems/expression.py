@@ -1,4 +1,4 @@
-from compiler import Asm
+from compiler import *
 from codeitembase import CodeItemBase
 
 class ExpressionBase(CodeItemBase):
@@ -15,12 +15,10 @@ class Addition(ExpressionBase):
 		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '+')
+		yield Instruction(Comment, '+')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-		yield Asm('ADD A,Rn', 0)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(ADD, Peek(), A)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -35,12 +33,10 @@ class And(ExpressionBase):
 		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '&')
+		yield Instruction(Comment, '&')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-		yield Asm('ANL A,Rn', 0)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(AND, Peek(), A)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -81,17 +77,18 @@ class Call(ExpressionBase):
 			for asm in arg.transformToAsm(containingFunction, containingLoop):
 				yield asm
 
-		yield Asm('comment', 'call')
+		yield Instruction(Comment, 'call')
 
+		# TODO
 		address = 0x07 + len(self.arglist)
 
 		for arg in self.arglist:
 			yield Asm('POP direct', address)
 			address -= 1
 
-		yield Asm('LCALL addr16', 'func_' + self.function)
+		yield Instruction(JSR, 'func_' + self.function)
 		# TODO: don't push for void functions.
-		yield Asm('PUSH direct', 0)
+		yield Instruction(SET, Push(), A)
 
 	def stackUsage(self, functions):
 		maxStack = 0
@@ -109,10 +106,9 @@ class Constant(ExpressionBase):
 	constantExpression = True
 
 	def transformToAsm(self, containingFunction, containingLoop):
-		yield Asm('comment', 'constant')
+		yield Instruction(Comment, 'constant')
 
-		yield Asm('MOV Rn,#data', 0, self.value)
-		yield Asm('PUSH direct', 0)
+		yield Instruction(SET, Push(), Literal(self.value))
 
 	def stackUsage(self, functions):
 		return 1
@@ -135,28 +131,20 @@ class Identifier(ExpressionBase):
 		containingFunction.identifiers[self.name].read = True
 
 	def transformToAsm(self, containingFunction, containingLoop):
-		yield Asm('comment', 'identifier')
+		yield Instruction(Comment, 'identifier')
 
 		if containingFunction.identifiers[self.name].constant:
 			# identifier is a constant data field
-			yield Asm('MOV Rn,#data', 0, containingFunction.identifiers[self.name].value)
-			yield Asm('PUSH direct', 0)
+			yield Instruction(SET, Push(), Literal(containingFunction.identifiers[self.name].value))
 		elif '.' in self.name:
 			# identifier is a data field
 
 			location = containingFunction.identifiers[self.name].location
 
-			if location == 'internal':
-				yield Asm('PUSH direct', self.name)
-			elif location == 'external':
-				yield Asm('MOV DPTR,#data16', self.name)
-				yield Asm('MOVX A,@DPTR')
-				yield Asm('PUSH direct', 'ACC')
-			else:
-				raise Exception("Internal error: unknown data type location '%s'" % location) 
+			yield Instruction(SET, Push(), self.name)
 		else:
 			# identifier is a local variable
-			yield Asm('PUSH direct', containingFunction.getRegisterForVariable(self.name))
+			yield Instruction(SET, Push(), containingFunction.getRegisterForVariable(self.name))
 
 	def stackUsage(self, functions):
 		return 1
@@ -171,12 +159,10 @@ class Multiplication(ExpressionBase):
 		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '*')
+		yield Instruction(Comment, '*')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 'B')
-		yield Asm('MUL AB')
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(MUL, Peek(), A)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -189,11 +175,9 @@ class Not(ExpressionBase):
 		for instruction in self.expression.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '!')
+		yield Instruction(Comment, '!')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('CPL A')
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(XOR, Peek(), Literal(0xffff))
 
 	def stackUsage(self, functions):
 		return self.expression.stackUsage(functions)
@@ -208,12 +192,10 @@ class Or(ExpressionBase):
 		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '|')
+		yield Instruction(Comment, '|')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-		yield Asm('ORL A,Rn', 0)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(BOR, Peek(), A)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -228,13 +210,10 @@ class Subtraction(ExpressionBase):
 		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '-')
+		yield Instruction(Comment, '-')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-		yield Asm('CLR C')
-		yield Asm('SUBB A,Rn', 0)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(SUB, Peek(), A)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -249,12 +228,10 @@ class Xor(ExpressionBase):
 		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '|')
+		yield Instruction(Comment, '^')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-		yield Asm('XRL A,Rn', 0)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(XOR, Peek(), A)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)

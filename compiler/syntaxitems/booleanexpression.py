@@ -1,4 +1,4 @@
-from compiler import Asm, nextlabel
+from compiler import *
 from codeitembase import CodeItemBase
 
 class BooleanExpressionBase(CodeItemBase):
@@ -13,7 +13,7 @@ class BooleanConstant(BooleanExpressionBase):
 	constantExpression = True
 
 	def transformToAsm(self, containingFunction, containingLoop):
-		yield Asm('comment', 'BooleanConstant')
+		yield Instruction(Comment, 'BooleanConstant')
 
 		if self.value:
 			yield Asm('SETB bit', 'ACC', 0)

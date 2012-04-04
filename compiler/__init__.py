@@ -1,4 +1,4 @@
-from asmgenerator import Asm, nextlabel
+from asmgenerator import *
 from compilererror import CompilerError
 from dccompiler import DCCompiler
 from dcparser import DCParser

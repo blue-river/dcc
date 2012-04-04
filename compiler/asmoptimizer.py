@@ -1,4 +1,4 @@
-from asmgenerator import Asm, AsmSize
+from asmgenerator import Instruction, AsmSize
 
 class AsmOptimizer(object):
 	'''

@@ -1,4 +1,4 @@
-from compiler import Asm
+from compiler import *
 from booleanexpression import BooleanExpressionBase
 
 class BooleanAnd(BooleanExpressionBase):

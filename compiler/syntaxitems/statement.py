@@ -1,4 +1,4 @@
-from compiler import Asm
+from compiler import *
 from codeitembase import CodeItemBase
 
 class SetBit(CodeItemBase):

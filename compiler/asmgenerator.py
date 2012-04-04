@@ -1,29 +1,170 @@
-class Asm(object):
+class Instruction(object):
+	def __init__(self, opcode, a, b = None):
+		self.opcode = opcode
+		self.a = a
+		self.b = b
 
-	def __init__(self, type, *args):
-		self.type = type
-		self.metadatabefore = []
-		self.metadataafter = []
+	def size(self):
+		if opcode == Comment or opcode == Label:
+			return 0
+		if opcode == JSR:
+			return 1 + a.size()
+		return 1 + a.size() + b.size()
 
-		if type == 'comment':
-			self.args = args
-		else:
-			self.args = [replaceDot(arg) for arg in args]
+	def asm(self):
+		return opcode(a, b)
 
-	def addMetadataBefore(self, *args):
-		self.metadatabefore.append(args)
-		return self
+def SET(a, b):
+	return 'SET %s, %s' % (a.asm(), b.asm())
+def ADD(a, b):
+	return 'ADD %s, %s' % (a.asm(), b.asm())
+def SUB(a, b):
+	return 'SUB %s, %s' % (a.asm(), b.asm())
+def MUL(a, b):
+	return 'MUL %s, %s' % (a.asm(), b.asm())
+def DIV(a, b):
+	return 'DIV %s, %s' % (a.asm(), b.asm())
+def MOD(a, b):
+	return 'MOD %s, %s' % (a.asm(), b.asm())
+def SHL(a, b):
+	return 'SHL %s, %s' % (a.asm(), b.asm())
+def SHR(a, b):
+	return 'SHR %s, %s' % (a.asm(), b.asm())
+def AND(a, b):
+	return 'AND %s, %s' % (a.asm(), b.asm())
+def BOR(a, b):
+	return 'BOR %s, %s' % (a.asm(), b.asm())
+def XOR(a, b):
+	return 'XOR %s, %s' % (a.asm(), b.asm())
+def IFE(a, b):
+	return 'IFE %s, %s' % (a.asm(), b.asm())
+def IFN(a, b):
+	return 'IFN %s, %s' % (a.asm(), b.asm())
+def IFG(a, b):
+	return 'IFG %s, %s' % (a.asm(), b.asm())
+def IFB(a, b):
+	return 'IFB %s, %s' % (a.asm(), b.asm())
 
-	def addMetadataAfter(self, *args):
-		self.metadataafter.append(args)
-		return self
+def JSR(a, b):
+	return 'ISR %s' % a.asm()
 
+def Comment(a, b):
+	return '; %s' % a
+
+def Label(a, b):
+	return ':%s' % a
+
+
+class Register(object):
+	def __init__(self, register):
+		self.register = register
+
+	def size(self):
+		return 0
+
+	def asm(self):
+		return self.register
+
+Registers = 'A', 'B', 'C', 'X', 'Y', 'Z', 'I', 'J'
+A = Register('A')
+B = Register('B')
+C = Register('C')
+X = Register('X')
+Y = Register('Y')
+Z = Register('Z')
+I = Register('I')
+J = Register('J')
+
+ArgumentOffset = 0x08
+
+class RegisterPointer(object):
+	def __int__(self, register):
+		self.register = register
+
+	def size(self):
+		return 0
+
+	def asm(self):
+		return '[%s]' % self.register.register
+
+class RegisterPointerOffset(object):
+	def __init__(self, register, offset):
+		self.register = register
+		self.offset = offset
+
+	def size(self):
+		return 1
+
+	def asm(self):
+		return '[%d + %s]' % (self.offset, self.register.register)
+
+class Pop(object):
+	def size(self):
+		return 0
+
+	def asm(self):
+		return 'POP'
+
+class Peek(object):
+	def size(self):
+		return 0
+
+	def asm(self):
+		return 'PEEK'
+
+class Push(object):
+	def size(self):
+		return 0
+
+	def asm(self):
+		return 'PUSH'
+
+class SP(object):
+	def size(self):
+		return 0
+
+	def asm(self):
+		return 'SP'
+
+class PC(object):
+	def size(self):
+		return 0
+
+	def asm(self):
+		return 'PC'
+
+
+class Pointer(object):
+	def __init__(self, location):
+		self.location = location
+
+	def size(self):
+		return 1
+
+	def asm(self):
+		return '[%d]' % self.location
+
+class Literal(object):
+	def __init__(self, value):
+		self.value = value
+
+	def size(self):
+		if self.value < 0x20:
+			return 1
+		return 0
+
+	def asm(self):
+		return '%d' % self.value
+
+
+# is this needed?
 def replaceDot(arg):
 	# hack
 	if not isinstance(arg, str):
 		return arg
 
 	return arg.replace('.', '__dot__')
+
 
 def count(program):
 	instructions = 0
@@ -97,7 +238,7 @@ def transform(datafields, functions):
 			else:
 				raise Exception("Internal error: Unknown data field location '%s'" % datafield.location)
 
-		program.append(Asm('EQU', datafield.name, datafield.address))
+		#program.append(Asm('EQU', datafield.name, datafield.address))
 
 	# stack pointer starts at the address of the last data field.
 	# the stack data actually begins at the next address.
@@ -105,27 +246,28 @@ def transform(datafields, functions):
 
 	maxStackSize = 0xFF - stackStartAddress
 
-	program.append(Asm('EQU', 'stack', stackStartAddress))
+	#program.append(Asm('EQU', 'stack', stackStartAddress))
 
-	program += bootCode
+	#program += bootCode
 
-	program += initCode
+	#program += initCode
 
-	for datafield in datafields.values():
-		if datafield.default is not None:
-			if datafield.location == 'internal':
-				program.append(Asm('MOV direct,#data', datafield.name, datafield.default))
-			elif datafield.location == 'external':
-				program.append(Asm('MOV DPTR,#data16', datafield.name))
-				program.append(Asm('MOV direct,#data', 'ACC', datafield.default))
-				program.append(Asm('MOVX @DPTR,A'))
+	# TODO: do we need to null-initialize fields?
+
+	#for datafield in datafields.values():
+	#	if datafield.default is not None:
+	#		if datafield.location == 'internal':
+	#			program.append(Asm('MOV direct,#data', datafield.name, datafield.default))
+	#		elif datafield.location == 'external':
+	#			program.append(Asm('MOV DPTR,#data16', datafield.name))
+	#			program.append(Asm('MOV direct,#data', 'ACC', datafield.default))
+	#			program.append(Asm('MOVX @DPTR,A'))
 
 	program += startCode
 
 	for function in functions.values():
 		index = len(program)
 		program += function.transformToAsm()
-		program[index].addMetadataAfter('code address alias', function.name)
 
 	debugData = {'memoryAddresses': memoryAddresses}
 
@@ -171,22 +313,29 @@ def programToAsm(program, options):
 
 # data
 
-bootCode = [
-	Asm('origin', 0x00).addMetadataAfter('code address alias', 'boot code'),
-	Asm('AJMP addr11', 'init'),
-]
+#bootCode = [
+#	Asm('origin', 0x00).addMetadataAfter('code address alias', 'boot code'),
+#	Asm('AJMP addr11', 'init'),
+#]
 
-initCode = [ 
-	Asm('origin', 0x80).addMetadataAfter('code address alias', 'initialisation'),
-	Asm('label', 'init'),
-	Asm('MOV direct,#data', 'SP', 'stack'),
-]
+#initCode = [ 
+#	Asm('origin', 0x80).addMetadataAfter('code address alias', 'initialisation'),
+#	Asm('label', 'init'),
+# Asm('MOV direct,#data', 'SP', 'stack'),
+#]
+
+#startCode = [
+#	Asm('label', 'startcode'),
+#	Asm('LCALL addr16', 'func_main__dot__main'),
+#	Asm('label', 'mainexited').addMetadataAfter('code address alias', 'main exited'),
+#	Asm('SJMP rel', 'mainexited'),
+#]
 
 startCode = [
-	Asm('label', 'startcode'),
-	Asm('LCALL addr16', 'func_main__dot__main'),
-	Asm('label', 'mainexited').addMetadataAfter('code address alias', 'main exited'),
-	Asm('SJMP rel', 'mainexited'),
+	Instruction(Label, 'startcode'),
+	Instruction(SET, PC(), 'func_main__dot__main'),
+	Instruction(Label, 'mainexited'),
+	Instruction(SET, PC, 'mainexited'),
 ]
 
 AsmOutput = {

@@ -1,4 +1,4 @@
-from compiler import Asm, nextlabel
+from compiler import *
 from codeitembase import CodeItemBase
 
 class Break(CodeItemBase):

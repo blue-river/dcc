@@ -1,4 +1,4 @@
-from compiler import Asm
+from compiler import *
 from codeitembase import CodeItemBase
 from statement import ReturnValue
 
@@ -75,19 +75,19 @@ class FunctionBase(CodeItemBase):
 	def transformToAsm(self):
 		if self.saveVariables:
 			for i in xrange(len(self.args) + len(self.locals)):
-				yield Asm('PUSH direct', i + 2)
+				yield Instruction(SET, Push(), Registers[i + 2])
 
 		for i in xrange(len(self.args)):
-			yield Asm('MOV Rn,direct', i + 2, i + 0x08)
+			yield Instruction(SET, Registers[i + 2], i + ArgumentOffset)
 
 		for instruction in self.statementblock.transformToAsm(self, None):
 			yield instruction
 			
-		yield Asm('label', 'ret_' + self.name)
+		yield Instruction(Label, 'ret_' + self.name)
 
 		if self.saveVariables:
 			for i in xrange(len(self.args) + len(self.locals) - 1, -1, -1):
-				yield Asm('POP direct', i + 2)
+				yield Instruction(SET, Registers[i + 2], Pop())
 
 		if self.datatype != 'void':
 			if not self.statementblock.statements or not isinstance(self.statementblock.statements[-1], ReturnValue):
@@ -113,7 +113,7 @@ class PredefinedFunction(FunctionBase):
 		pass
 
 	def transformToAsm(self):
-		yield Asm('label', 'func_' + self.name)
+		yield Instruction(Label, 'func_' + self.name)
 
 		for instruction in self.asm:
 			yield instruction
@@ -124,12 +124,13 @@ class PredefinedFunction(FunctionBase):
 class Function(FunctionBase):
 
 	def transformToAsm(self):
-		yield Asm('label', 'func_' + self.name)
+		yield Instruction(Label, 'func_' + self.name)
 
 		for instruction in FunctionBase.transformToAsm(self):
 			yield instruction
 
-		yield Asm('RET')
+		yield Instruction(SET, PC(), Pop())
+		#yield Asm('RET')
 
 class MainFunction(Function):
 
