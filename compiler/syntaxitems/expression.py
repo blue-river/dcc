@@ -80,15 +80,15 @@ class Call(ExpressionBase):
 		yield Instruction(Comment, 'call')
 
 		# TODO
-		address = 0x07 + len(self.arglist)
+		address = len(self.arglist)
 
 		for arg in self.arglist:
-			yield Asm('POP direct', address)
+			yield Instruction(SET, Literal(address), Pop())
 			address -= 1
 
 		yield Instruction(JSR, 'func_' + self.function)
 		# TODO: don't push for void functions.
-		yield Instruction(SET, Push(), A)
+		yield Instruction(SET, Push(), O)
 
 	def stackUsage(self, functions):
 		maxStack = 0

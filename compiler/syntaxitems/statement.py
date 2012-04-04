@@ -30,7 +30,9 @@ class SetBit(CodeItemBase):
 			for instruction in self.value.transformToAsm(containingFunction, containingLoop):
 				yield instruction
 
-		yield Asm('comment', 'setbit')
+		yield Instruction(Comment, 'setbit not yet supported')
+		# TODO
+		return
 
 		if not self.value.constantExpression:
 			yield Asm('POP direct', 'ACC')
@@ -104,23 +106,16 @@ class Assignment(CodeItemBase):
 		for instruction in self.value.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', 'assignment')
+		yield Instruction(Comment, 'assignment')
 
 		if '.' in self.target:
 			# identifier is a data field
 			location = containingFunction.identifiers[self.target].location
 
-			if location == 'internal':
-				yield Asm('POP direct', self.target)
-			elif location == 'external':
-				yield Asm('MOV DPTR,#data16', self.target)
-				yield Asm('POP direct', 'ACC')
-				yield Asm('MOVX @DPTR,A')
-			else:
-				raise Exception("Internal error: unknown data type location '%s'" % location) 
+			yield Instruction(SET, Pointer(self.target), Pop())
 		else:
 			# identifier is a local variable
-			yield Asm('POP direct', containingFunction.getRegisterForVariable(self.target))
+			yield Instruction(SET, containingFunction.getRegisterForVariable(self.target), Pop())
 
 	def stackUsage(self, functions):
 		return self.value.stackUsage(functions)
@@ -133,11 +128,10 @@ class Discard(CodeItemBase):
 		for instruction in self.expression.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', 'discard')
+		yield Instruction('comment', 'discard')
+		yield Instruction(ADD, SP, 1)
 
-		# TODO: discard bytes specified by data type
-
-		yield Asm('DEC direct', 'SP')
+		# TODO: discard words specified by data type
 
 	def stackUsage(self, functions):
 		return self.expression.stackUsage(functions)
@@ -226,9 +220,9 @@ class Return(CodeItemBase):
 		if containingFunction.datatype != 'void':
 			self.error("Functions with data type '%s' cannot return without a value" % containingFunction.datatype)
 
-		yield Asm('comment', 'return')
+		yield Instruction(Comment, 'return')
 
-		yield Asm('LJMP addr16', 'ret_' + containingFunction.name)
+		yield Instruction(SET, PC(), 'ret_' + containingFunction.name)
 
 	def stackUsage(self, functions):
 		return 0
@@ -244,10 +238,9 @@ class ReturnValue(CodeItemBase):
 		for instruction in self.value.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', 'return')
-
-		yield Asm('POP direct', 0)
-		yield Asm('LJMP addr16', 'ret_' + containingFunction.name)
+		yield Instruction(Comment, 'return')
+		yield Instruction(SET, O(), Pop())
+		yield Instruction(SET, PC(), 'ret_' + containingFunction.name)
 
 	def stackUsage(self, functions):
 		return self.value.stackUsage(functions)

@@ -9,9 +9,9 @@ class Break(CodeItemBase):
 		if containingLoop is None:
 			self.error('break outside loop')
 
-		yield Asm('comment', 'break')
+		yield Instruction(Comment, 'break')
 
-		yield Asm('LJMP addr16', containingLoop.endlabel)
+		yield Instruction(SET, PC(), containingLoop.endlabel)
 
 	def stackUsage(self, functions):
 		return 0
@@ -24,9 +24,9 @@ class Continue(CodeItemBase):
 		if containingLoop is None:
 			self.error('continue outside loop')
 
-		yield Asm('comment', 'continue')
+		yield Instruction(Comment, 'continue')
 
-		yield Asm('LJMP addr16', containingLoop.startlabel)
+		yield Instruction(SET, PC(), containingLoop.startlabel)
 
 	def stackUsage(self, functions):
 		return 0
@@ -40,34 +40,24 @@ class If(CodeItemBase):
 		for instruction in self.predicate.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', 'if')
+		yield Instruction(Comment, 'if')
 
 		thenlabel = nextlabel('if_then')
-		jnbelselabel = nextlabel('if_jnbelse')
-
-		elselabel = nextlabel('if_else')
 		endlabel = nextlabel('if_end')
 
-		yield Asm('POP direct', 'ACC')
-
-		yield Asm('JNB bit,rel', 'ACC', 0, jnbelselabel)
-		yield Asm('SJMP rel', thenlabel)
-
-		yield Asm('label', jnbelselabel)
-		yield Asm('LJMP addr16', elselabel)
-
-		yield Asm('label', thenlabel)
-
-		for instruction in self.then.transformToAsm(containingFunction, containingLoop):
-			yield instruction
-
-		yield Asm('LJMP addr16', endlabel)
-		yield Asm('label', elselabel)
+		yield Instruction(IFE, Pop(), Literal(0))
+		yield Instruction(SET, SP(), thenlabel)
 
 		for instruction in self.else_.transformToAsm(containingFunction, containingLoop):
 			yield instruction
+
+		yield Instruction(SET, SP(), endlabel)
+		yield Instruction(Label, thenlabel)
+
+		for instruction in self.then.transformToAsm(containingFunction, containingLoop):
+			yield instruction
 		
-		yield Asm('label', endlabel)
+		yield Instruction(Label, endlabel)
 
 	def stackUsage(self, functions):
 		return max(self.predicate.stackUsage(functions), self.then.stackUsage(functions), self.else_.stackUsage(functions))
@@ -80,15 +70,15 @@ class Loop(CodeItemBase):
 		self.startlabel = nextlabel('loop_start')
 		self.endlabel = nextlabel('loop_end')
 
-		yield Asm('comment', 'loop')
+		yield Instruction(Comment, 'loop')
 
-		yield Asm('label', self.startlabel)
+		yield Instruction(Label, self.startlabel)
 
 		for instruction in self.body.transformToAsm(containingFunction, self):
 			yield instruction
 
-		yield Asm('LJMP addr16', self.startlabel)
-		yield Asm('label', self.endlabel)
+		yield Instruction(SET, SP(), self.startlabel)
+		yield Instruction(Label, self.endlabel)
 
 	def stackUsage(self, functions):
 		return self.body.stackUsage(functions)

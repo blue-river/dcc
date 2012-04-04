@@ -133,6 +133,12 @@ class PC(object):
 	def asm(self):
 		return 'PC'
 
+class O(object):
+	def size(self):
+		return 0
+
+	def asm(self):
+		return 'O'
 
 class Pointer(object):
 	def __init__(self, location):

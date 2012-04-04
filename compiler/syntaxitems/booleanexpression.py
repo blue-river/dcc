@@ -16,11 +16,9 @@ class BooleanConstant(BooleanExpressionBase):
 		yield Instruction(Comment, 'BooleanConstant')
 
 		if self.value:
-			yield Asm('SETB bit', 'ACC', 0)
+			yield Instruction(SET, Push(), Literal(1))
 		else:
-			yield Asm('CLR bit', 'ACC', 0)
-
-		yield Asm('PUSH direct', 'ACC')
+			yield Instruction(SET, Push(), Literal(0))
 
 	def stackUsage(self, functions):
 		return 1
@@ -33,19 +31,26 @@ class GetBit(BooleanExpressionBase):
 	def resolveIdentifiers(self, containingModule):
 		BooleanExpressionBase.resolveIdentifiers(self, containingModule)
 
-		if self.bit > 7 or self.bit < 0:
+		if self.bit > 15 or self.bit < 0:
 			self.error("Bit '%d' out of range" % self.bit)
 
 	def transformToAsm(self, containingFunction, containingLoop):
 		for instruction in self.expression.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', 'getbit')
+		yield Instruction(Comment, 'getbit')
+		# TODO?
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('MOV C,bit', 'ACC', self.bit)
-		yield Asm('MOV bit,C', 'ACC', 0)
-		yield Asm('PUSH direct', 'ACC')
+		bitSetLabel = nextlabel('getbit_set')
+		endLabel = nextlabel('getbit_end')
+
+		yield Instruction(IFB, Pop(), 1 << self.bit)
+		yield Instruction(SET, PC(), bitSetLabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(SET, PC(), endLabel)
+		yield Instruction(Label, bitSetLabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(Label, endLabel)
 
 	def stackUsage(self, functions):
 		return self.expression.stackUsage(functions)
@@ -60,24 +65,18 @@ class Equals(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-
-		yield Asm('comment', '==')
+		yield Instruction(Comment, '==')
 
 		notequallabel = nextlabel('eq_notequal')
 		endlabel = nextlabel('eq_end')
 
-		yield Asm('CJNE A,direct,rel', 0, notequallabel)
-
-		yield Asm('SETB bit', 'ACC', 0)
-		yield Asm('SJMP rel', endlabel)
-
-		yield Asm('label', notequallabel)
-		yield Asm('CLR bit', 'ACC', 0)
-
-		yield Asm('label', endlabel)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(IFN, Pop(), Pop())
+		yield Instruction(SET, PC(), notequallabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(SET, PC(), endlabel)
+		yield Instruction(Label, notequallabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(Label, endlabel)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -92,24 +91,18 @@ class NotEquals(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
+		yield Instruction(Comment, '!=')
 
-		yield Asm('comment', '!=')
-
-		notequallabel = nextlabel('neq_notequal')
+		equallabel = nextlabel('neq_equal')
 		endlabel = nextlabel('neq_end')
 
-		yield Asm('CJNE A,direct,rel', 0, notequallabel)
-
-		yield Asm('CLR bit', 'ACC', 0)
-		yield Asm('SJMP rel', endlabel)
-
-		yield Asm('label', notequallabel)
-		yield Asm('SETB bit', 'ACC', 0)
-
-		yield Asm('label', endlabel)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(IFE, Pop(), Pop())
+		yield Instruction(SET, PC(), equallabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(SET, PC(), endlabel)
+		yield Instruction(Label, equallabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(Label, endlabel)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -124,27 +117,19 @@ class GreaterEquals(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '>=')
+		yield Instruction('comment', '>=')
 
-		carrylabel = nextlabel('geq_carry')
-		endlabel = nextlabel('geq_end')
+		greaterEqualsLabel = nextlabel('geq_true')
+		endLabel = nextlabel('end')
 
-		yield Asm('POP direct', 0) # left
-		yield Asm('POP direct', 'ACC') # right
-
-		yield Asm('CLR C')
-		yield Asm('SUBB A,Rn', 0) # left - right
-
-		yield Asm('JC rel', carrylabel)
-
-		yield Asm('SETB bit', 'ACC', 0)
-		yield Asm('SJMP rel', endlabel)
-
-		yield Asm('label', carrylabel)
-		yield Asm('CLR bit', 'ACC', 0)
-
-		yield Asm('label', endlabel)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop()) # right
+		yield Instruction(IFG, A, Pop())
+		yield Instruction(SET, PC(), greaterEqualsLabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(SET, PC(), endLabel)
+		yield Instruction(Label, greaterEqualsLabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(Label, endLabel)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -159,27 +144,19 @@ class GreaterThan(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '>')
+		yield Instruction(Comment, '>')
 
-		carrylabel = nextlabel('gt_carry')
+		greaterLabel = nextlabel('gt_true')
 		endlabel = nextlabel('gt_end')
 
-		yield Asm('POP direct', 'ACC') # right
-		yield Asm('POP direct', 0) # left
-
-		yield Asm('CLR C')
-		yield Asm('SUBB A,Rn', 0) # right - left
-
-		yield Asm('JC rel', carrylabel)
-
-		yield Asm('CLR bit', 'ACC', 0)
-		yield Asm('SJMP rel', endlabel)
-
-		yield Asm('label', carrylabel)
-		yield Asm('SETB bit', 'ACC', 0)
-
-		yield Asm('label', endlabel)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop()) # right
+		yield Instruction(IFG, Pop(), A)
+		yield Instruction(SET, PC(), greaterLabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(SET, PC(), endlabel)
+		yield Instruction(Label, greaterLabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(Label, endlabel)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -194,27 +171,19 @@ class LessEquals(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '<=')
+		yield Instruction(Comment, '<=')
 
-		carrylabel = nextlabel('leq_carry')
-		endlabel = nextlabel('leq_end')
+		greaterLabel = nextlabel('gt_true')
+		endlabel = nextlabel('gt_end')
 
-		yield Asm('POP direct', 'ACC') # right
-		yield Asm('POP direct', 0) # left
-
-		yield Asm('CLR C')
-		yield Asm('SUBB A,Rn', 0) # right - left
-
-		yield Asm('JC rel', carrylabel)
-
-		yield Asm('SETB bit', 'ACC', 0)
-		yield Asm('SJMP rel', endlabel)
-
-		yield Asm('label', carrylabel)
-		yield Asm('CLR bit', 'ACC', 0)
-
-		yield Asm('label', endlabel)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop()) # right
+		yield Instruction(IFG, Pop(), A)
+		yield Instruction(SET, PC(), greaterLabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(SET, PC(), endlabel)
+		yield Instruction(Label, greaterLabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(Label, endlabel)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -229,27 +198,19 @@ class LessThan(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '<')
+		yield Instruction('comment', '<')
 
-		carrylabel = nextlabel('lt_carry')
-		endlabel = nextlabel('lt_end')
+		greaterEqualsLabel = nextlabel('geq_true')
+		endLabel = nextlabel('end')
 
-		yield Asm('POP direct', 0) # left
-		yield Asm('POP direct', 'ACC') # right
-
-		yield Asm('CLR C')
-		yield Asm('SUBB A,Rn', 0) # left - right
-
-		yield Asm('JC rel', carrylabel)
-
-		yield Asm('CLR bit', 'ACC', 0)
-		yield Asm('SJMP rel', endlabel)
-
-		yield Asm('label', carrylabel)
-		yield Asm('SETB bit', 'ACC', 0)
-
-		yield Asm('label', endlabel)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop()) # right
+		yield Instruction(IFG, A, Pop())
+		yield Instruction(SET, PC(), greaterEqualsLabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(SET, PC(), endLabel)
+		yield Instruction(Label, greaterEqualsLabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(Label, endLabel)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)

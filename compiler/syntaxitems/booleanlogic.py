@@ -11,13 +11,10 @@ class BooleanAnd(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '&&')
+		yield Instruction(Comment, 'boolean &&')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-
-		yield Asm('ANL A,Rn', 0)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(AND, Peek(), A)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -32,13 +29,18 @@ class BooleanEquals(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', 'boolean ==')
+		yield Instruction(Comment, 'boolean ==')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-		yield Asm('XRL A,Rn', 0)
-		yield Asm('CPL A')
-		yield Asm('PUSH direct', 'ACC')
+		notequallabel = nextlabel('eq_notequal')
+		endlabel = nextlabel('eq_end')
+
+		yield Instruction(IFN, Pop(), Pop())
+		yield Instruction(SET, PC(), notequallabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(SET, PC(), endlabel)
+		yield Instruction(Label, notequallabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(Label, endlabel)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -53,12 +55,18 @@ class BooleanNotEquals(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', 'boolean !=')
+		yield Instruction(Comment, 'boolean !=')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
-		yield Asm('XRL A,Rn', 0)
-		yield Asm('PUSH direct', 'ACC')
+		equallabel = nextlabel('neq_equal')
+		endlabel = nextlabel('neq_end')
+
+		yield Instruction(IFE, Pop(), Pop())
+		yield Instruction(SET, PC(), equallabel)
+		yield Instruction(SET, Push(), Literal(1))
+		yield Instruction(SET, PC(), endlabel)
+		yield Instruction(Label, equallabel)
+		yield Instruction(SET, Push(), Literal(0))
+		yield Instruction(Label, endlabel)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -71,11 +79,9 @@ class BooleanNot(BooleanExpressionBase):
 		for instruction in self.value.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '!')
+		yield Instruction(Comment, 'boolean !')
 
-		yield Asm('POP direct', 'ACC')
-		yield Asm('CPL bit', 'ACC', 0)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(XOR, Peek(), 1)
 
 	def stackUsage(self, functions):
 		return self.value.stackUsage(functions)
@@ -90,13 +96,10 @@ class BooleanOr(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('comment', '||')
-		
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 0)
+		yield Instruction(Comment, 'boolean |')
 
-		yield Asm('ANL A,Rn', 0)
-		yield Asm('PUSH direct', 'ACC')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(BOR, Peek(), A)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
