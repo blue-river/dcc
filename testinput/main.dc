@@ -1,10 +1,10 @@
-const byte something = 5;
+const int something = 5;
 
-byte counter = 20;
-internal byte baz = 10;
+int counter = 20;
+int baz = 10;
 
-addr byte foo = 0xFE00;
-addr internal byte bar = 0xFE;
+addr int foo = 0xFE00;
+addr int bar = 0xFE;
 
 void main()
 {

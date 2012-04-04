@@ -86,14 +86,6 @@ class DCParser(object):
 		d.address = p[5]
 		p[0] = d
 
-	def p_internaladdr(self, p):
-		'datafield : ADDR INTERNAL DATATYPE unqualifiedidentifier ASSIGN integer SEMICOLON'
-		d = DataField(self.filename, p.lineno(1), p[3], p[4])
-		d.location = 'internal'
-		# TODO check range
-		d.address = p[6]
-		p[0] = d
-
 	def p_const(self, p):
 		'datafield : CONST DATATYPE unqualifiedidentifier ASSIGN integer SEMICOLON'
 		p[0] = ConstantDataField(self.filename, p.lineno(1), p[2], p[3], p[5])

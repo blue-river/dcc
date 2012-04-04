@@ -1,9 +1,9 @@
-byte bar;
-byte baz;
+int bar;
+int baz;
 
-byte test(byte param)
+int test(int param)
 {
-	byte variable;
+	int variable;
 
 	variable = 2 + foo.bar - 5;
 	foo.baz = variable + 3;
@@ -17,7 +17,7 @@ byte test(byte param)
 	return foo() - (foo.baz + param);
 }
 
-byte foo()
+int foo()
 {
 	donothing();
 	return 42;
@@ -28,7 +28,7 @@ void donothing()
 	// fall out
 }
 
-void loopy(byte times)
+void loopy(int times)
 {
 	loop
 	{

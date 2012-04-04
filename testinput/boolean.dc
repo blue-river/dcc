@@ -1,6 +1,6 @@
-internal byte foo;
+internal int foo;
 
-void comparisons(byte param)
+void comparisons(int param)
 {
 	if (boolean.foo > 3 != 2 < param || 5 <= 4 && (!(3 >= 4) == (2 != 5)) && !boolean.foo@3 == true != false)
 	{

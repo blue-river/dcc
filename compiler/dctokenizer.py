@@ -10,7 +10,7 @@ class DCTokenizer(object):
 	reserved = {
 		'addr': 'ADDR',
 		'break': 'BREAK',
-		'byte': 'DATATYPE',
+		'int': 'DATATYPE',
 		'const': 'CONST',
 		'continue': 'CONTINUE',
 		'else': 'ELSE',
