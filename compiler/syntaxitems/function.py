@@ -7,7 +7,6 @@ class FunctionBase(CodeItemBase):
 	argumentNames = ('datatype', 'name', 'args', 'locals', 'statementblock')
 	passiveArguments = ('datatype', 'name', 'args', 'locals')
 
-	callable = True
 	saveVariables = True
 	called = False
 	hasStatementBlock = True
@@ -136,42 +135,3 @@ class MainFunction(Function):
 
 	called = True
 	saveVariables = False
-
-class InterruptHandler(FunctionBase):
-
-	callable = False
-	called = True
-
-	def __init__(self, filename, line, *args):
-		FunctionBase.__init__(self, filename, line, *args)
-
-		if self.datatype != 'void':
-			self.error("'%s' is an invalid return type for interrupt handlers. Only 'void' is allowed" % self.datatype)
-
-		if len(self.args) != 0:
-			self.error("Interrupt handlers cannot have arguments")
-
-	def transformToAsm(self):
-		yield Asm('label', 'func_' + self.name)
-
-		yield Asm('PUSH direct', 'PSW')
-		yield Asm('PUSH direct', 'ACC')
-		yield Asm('PUSH direct', 'B')
-		yield Asm('PUSH direct', 'DPH')
-		yield Asm('PUSH direct', 'DPL')
-		yield Asm('PUSH direct', 0)
-		
-		for instruction in FunctionBase.transformToAsm(self):
-			yield instruction
-
-		yield Asm('POP direct', 0)
-		yield Asm('POP direct', 'DPL')
-		yield Asm('POP direct', 'DPH')
-		yield Asm('POP direct', 'B')
-		yield Asm('POP direct', 'ACC')
-		yield Asm('POP direct', 'PSW')
-
-		yield Asm('RETI')
-
-	def stackUsage(self, functions):
-		return FunctionBase.stackUsage(self, functions) + 6

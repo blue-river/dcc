@@ -51,15 +51,6 @@ class DCCompiler(object):
 
 		print 'Max stack usage: %d bytes' % (functions['main.main'].stackUsage(functions) + 2)
 
-		ihStackUsage = 0
-
-		for function in functions:
-			if function.startswith('interrupts.handler_'):
-				ihStackUsage = max(ihStackUsage, functions[function].stackUsage(functions) + 2)
-
-		if ihStackUsage:
-			print 'Handling interrupts costs max %d bytes (%d with interrupted interrupts)' % (ihStackUsage, ihStackUsage * 2)
-
 		if options.optimize:
 			print 'Note: stack usage could be less, because optimization is enabled'
 

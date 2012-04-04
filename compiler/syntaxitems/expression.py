@@ -77,9 +77,6 @@ class Call(ExpressionBase):
 			arg.verifyIdentifiers(datafields, functions, containingFunction)
 			
 	def transformToAsm(self, containingFunction, containingLoop):
-		if not containingFunction.identifiers[self.function].callable:
-			self.error("Interrupt handlers cannot be called")
-
 		for arg in self.arglist:
 			for asm in arg.transformToAsm(containingFunction, containingLoop):
 				yield asm

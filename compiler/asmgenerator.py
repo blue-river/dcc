@@ -109,12 +109,6 @@ def transform(datafields, functions):
 
 	program += bootCode
 
-	for vectorName in InterruptVectors:
-		ihName = 'interrupts.handler_%s' % vectorName
-		if ihName in functions:
-			vectorDebugName = 'interrupt vector %s' % vectorName
-			program.append(Asm('origin', InterruptVectors[vectorName]))
-			program.append(Asm('LJMP addr16', 'func_' + ihName).addMetadataBefore('code address alias', vectorDebugName))
 	program += initCode
 
 	for datafield in datafields.values():
@@ -296,20 +290,3 @@ AsmSize = {
 	'RETI': 1,
 	'XRL A,Rn': 1,
 }
-
-InterruptVectors = {
-	'IE0': 0x03,
-	'TF0': 0x0B,
-	'IE1': 0x13,
-	'TF1': 0x1B,
-	'RI_TI': 0x23,
-	'TF2': 0x2B,
-	'IADC': 0x43,
-	'IE2': 0x4B,
-	'TRF_BCERR': 0x53,
-	'CT2P': 0x5B,
-	'CCnF_CCnR': 0x63,
-	'CT1FP_CT1FC': 0x6B,
-	'PDI': 0x7B,
-}
-

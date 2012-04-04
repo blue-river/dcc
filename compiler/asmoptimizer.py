@@ -156,9 +156,6 @@ class AsmOptimizer(object):
 		while location < len(self.program):
 			if self.program[location].reachable or self.program[location].type == 'origin':
 				location += 1
-			elif self.program[location].address < 0x80 and self.program[location].address % 8 == 3:
-				# interrupt handler, don't remove
-				location += 1
 			else:
 				del self.program[location]
 				modified = True

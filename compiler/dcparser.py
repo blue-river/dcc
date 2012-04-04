@@ -102,8 +102,6 @@ class DCParser(object):
 		'function : DATATYPE unqualifiedidentifier LEFTPAREN functionargs RIGHTPAREN LEFTBRACE functionlocals statementblock RIGHTBRACE'
 		if self.modulename == 'main' and p[2] == 'main':
 			f = MainFunction
-		elif self.modulename == 'interrupts' and p[2].startswith('handler_'):
-			f = InterruptHandler
 		else:
 			f = Function
 

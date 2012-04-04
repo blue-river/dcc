@@ -1,4 +1,4 @@
-const byte iets = 5;
+const byte something = 5;
 
 byte counter = 20;
 internal byte baz = 10;
@@ -8,8 +8,6 @@ addr internal byte bar = 0xFE;
 
 void main()
 {
-	interrupts.enable();
-
 	foo.main();
 
 	boolean.comparisons(42 | ~0x20 & 0b1010);
