@@ -128,8 +128,8 @@ class Discard(CodeItemBase):
 		for instruction in self.expression.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Instruction('comment', 'discard')
-		yield Instruction(ADD, SP, 1)
+		yield Instruction(Comment, 'discard')
+		yield Instruction(ADD, SP(), Literal(1))
 
 		# TODO: discard words specified by data type
 
@@ -222,7 +222,7 @@ class Return(CodeItemBase):
 
 		yield Instruction(Comment, 'return')
 
-		yield Instruction(SET, PC(), 'ret_' + containingFunction.name)
+		yield Instruction(SET, PC(), Literal('ret_' + containingFunction.name))
 
 	def stackUsage(self, functions):
 		return 0
@@ -240,7 +240,7 @@ class ReturnValue(CodeItemBase):
 
 		yield Instruction(Comment, 'return')
 		yield Instruction(SET, O(), Pop())
-		yield Instruction(SET, PC(), 'ret_' + containingFunction.name)
+		yield Instruction(SET, PC(), Literal('ret_' + containingFunction.name))
 
 	def stackUsage(self, functions):
 		return self.value.stackUsage(functions)

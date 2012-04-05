@@ -79,12 +79,9 @@ class DCCompiler(object):
 			if externalMemoryEndAddress >= 0x4000:
 				print 'External memory used: 0x4000-0x%X' % externalMemoryEndAddress
 
-		asm, newDebugData = asmgenerator.programToAsm(program, options)
-		debugData.update(newDebugData)
+		asm = asmgenerator.programToAsm(program, options)
 
-		debugDataJson = json.dumps(debugData, allow_nan=False, indent=4)
-
-		return asm, debugDataJson
+		return asm
 		
 
 	def parse(self, options, modulename):

@@ -5,14 +5,14 @@ class Instruction(object):
 		self.b = b
 
 	def size(self):
-		if opcode == Comment or opcode == Label:
+		if self.opcode == Comment or self.opcode == Label:
 			return 0
-		if opcode == JSR:
-			return 1 + a.size()
-		return 1 + a.size() + b.size()
+		if self.opcode == JSR:
+			return 1 + self.a.size()
+		return 1 + self.a.size() + self.b.size()
 
 	def asm(self):
-		return opcode(a, b)
+		return self.opcode(self.a, self.b)
 
 def SET(a, b):
 	return 'SET %s, %s' % (a.asm(), b.asm())
@@ -49,10 +49,10 @@ def JSR(a, b):
 	return 'ISR %s' % a.asm()
 
 def Comment(a, b):
-	return '; %s' % a
+	return '\n; %s' % a
 
 def Label(a, b):
-	return ':%s' % a
+	return '\n\t:%s' % a.asm()
 
 
 class Register(object):
@@ -65,7 +65,6 @@ class Register(object):
 	def asm(self):
 		return self.register
 
-Registers = 'A', 'B', 'C', 'X', 'Y', 'Z', 'I', 'J'
 A = Register('A')
 B = Register('B')
 C = Register('C')
@@ -74,8 +73,10 @@ Y = Register('Y')
 Z = Register('Z')
 I = Register('I')
 J = Register('J')
-
-ArgumentOffset = 0x08
+Registers = A, B, C, X, Y, Z, I, J
+TempStorage = A
+RepeatCounter = B
+ArgumentOffset = 0
 
 class RegisterPointer(object):
 	def __int__(self, register):
@@ -148,7 +149,7 @@ class Pointer(object):
 		return 1
 
 	def asm(self):
-		return '[%d]' % self.location
+		return '[%s]' % self.location
 
 class Literal(object):
 	def __init__(self, value):
@@ -160,8 +161,17 @@ class Literal(object):
 		return 0
 
 	def asm(self):
-		return '%d' % self.value
+		return '%s' % self.value
 
+class LabelReference(object):
+	def __init__(self, name):
+		self.name = name
+
+	def size(self):
+		return 1 # TODO
+
+	def asm(self):
+		return self.name
 
 # is this needed?
 def replaceDot(arg):
@@ -179,13 +189,12 @@ def count(program):
 	address = 0
 
 	for instruction in program:
-		if instruction.type == 'origin':
-			address = instruction.args[0]
+		#if instruction.type == 'origin':
+		#	address = instruction.args[0]
+		#	if realBytes < address:
+		#		realBytes = address
 
-			if realBytes < address:
-				realBytes = address
-
-		size = AsmSize[instruction.type]
+		size = instruction.size()
 
 		instruction.address = address
 
@@ -206,7 +215,7 @@ def nextlabel(name = 'unnamed'):
 	
 	thislabel += 1
 
-	return '%s_label_%X' % (name, thislabel)
+	return LabelReference('%s_label_%X' % (name, thislabel))
 
 def transform(datafields, functions):
 	program = []
@@ -283,39 +292,17 @@ def programToAsm(program, options):
 	lines = []
 	codeAddressAliases = []
 
-	def processMetadata(asm, metadataList, after):
-		for metadata in metadataList:
-			if metadata[0] == 'comment':
-				lines.append('; ' + metadata[1])
-
-			elif metadata[0] == 'code address alias':
-				address = asm.address
-
-				if after:
-					address += AsmSize[asm.type]
-
-				codeAddressAliases.append((asm.address, metadata[1]))
-
-			else:
-				raise Exception("Internal error: unknown metadata type '%s'" % metadata[0])
-
 	comment = ''
 
-	for asm in program:
-		processMetadata(asm, asm.metadatabefore, after=False)
-
+	for instruction in program:
 		if options.debugCodeGenerator:
-			comment = ' ; %X' % asm.address
+			comment = ' ; %X' % instruction.address
 
-		lines.append('\t' + AsmOutput[asm.type] % tuple(asm.args) + comment)
-
-		processMetadata(asm, asm.metadataafter, after=True)
-
-	debugData = {'codeAddressAliases': codeAddressAliases}
+		lines.append(instruction.asm())
 
 	lines.append('\n')
 
-	return '\n'.join(lines), debugData
+	return '\n'.join(lines)
 
 # data
 
@@ -338,10 +325,10 @@ def programToAsm(program, options):
 #]
 
 startCode = [
-	Instruction(Label, 'startcode'),
-	Instruction(SET, PC(), 'func_main__dot__main'),
-	Instruction(Label, 'mainexited'),
-	Instruction(SET, PC, 'mainexited'),
+	Instruction(Label, LabelReference('startcode')),
+	Instruction(SET, PC(), LabelReference('func_main__dot__main')),
+	Instruction(Label, LabelReference('mainexited')),
+	Instruction(SET, PC(), LabelReference('mainexited')),
 ]
 
 AsmOutput = {

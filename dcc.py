@@ -40,10 +40,10 @@ def main():
 		return DCCompiler().compile(options)
 
 	if options.debugCompiler:
-		asm, debugData = compile()
+		asm = compile()
 	else:
 		try:
-			asm, debugData = compile()
+			asm = compile()
 		except CompilerError as e:
 			print e
 			sys.exit(1)

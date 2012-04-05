@@ -92,37 +92,32 @@ class Repeat(CodeItemBase):
 		self.endlabel = nextlabel('repeat_end')
 		self.djnzrepeatlabel = nextlabel('repeat_djnzrepeat')
 
-		yield Asm('comment', 'repeat')
+		yield Instruction(Comment, 'repeat')
 
 		# save the current repeat counter
-		yield Asm('PUSH direct', 1)
+		yield Instruction(SET, Push(), RepeatCounter)
 
 		# get the new repeat counter
 		for instruction in self.repeatcount.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Asm('POP direct', 1)
-
-		# don't execute if the counter is 0
-		yield Asm('CJNE Rn,#data,rel', 1, 0, self.startlabel)
-		yield Asm('LJMP addr16', self.endlabel)
+		yield Instruction(SET, RepeatCounter, Pop())
 
 		# loop
-		yield Asm('label', self.startlabel)
+		yield Instruction(Label, self.startlabel)
+
+		# exit loop if the counter is 0
+		yield Instruction(IFE, RepeatCounter, Literal(0))
+		yield Instruction(SET, PC(), self.endlabel)
 
 		for instruction in self.body.transformToAsm(containingFunction, self):
 			yield instruction
 
-		yield Asm('DJNZ Rn,rel', 1, self.djnzrepeatlabel)
-		yield Asm('SJMP rel', self.endlabel)
+		yield Instruction(SUB, RepeatCounter, Literal(1))
+		yield Instruction(SET, PC(), self.startlabel)
 
-		yield Asm('label', self.djnzrepeatlabel)
-		yield Asm('LJMP addr16', self.startlabel)
-
-		yield Asm('label', self.endlabel)
-
-		# restore the old repeat counter
-		yield Asm('POP direct', 1)
+		yield Instruction(Label, self.endlabel)
+		yield Instruction(SET, RepeatCounter, Pop())
 
 	def stackUsage(self, functions):
 		return max(self.repeatcount.stackUsage(functions), self.body.stackUsage(functions) + 1)
@@ -134,31 +129,22 @@ class While(CodeItemBase):
 	def transformToAsm(self, containingFunction, containingLoop):
 		self.startlabel = nextlabel('while_start')
 		self.endlabel = nextlabel('while_end')
-		self.jnbcontinuelabel = nextlabel('while_jnbcontinue')
-		self.jnbendlabel = nextlabel('while_jnbendlabel')
 
-		yield Asm('comment', 'while')
+		yield Instruction(Comment, 'while')
 
-		yield Asm('label', self.startlabel)
+		yield Instruction(Label, self.startlabel)
 
 		for instruction in self.condition.transformToAsm(containingFunction, self):
 			yield instruction
 
-		yield Asm('POP direct', 'ACC')
-
-		yield Asm('JNB bit,rel', 'ACC', 0, self.jnbendlabel)
-		yield Asm('SJMP rel', self.jnbcontinuelabel)
-
-		yield Asm('label', self.jnbendlabel)
-		yield Asm('LJMP addr16', self.endlabel)
-
-		yield Asm('label', self.jnbcontinuelabel)
+		yield Instruction(IFE, Pop(), Literal(0))
+		yield Instruction(SET, PC(), self.endlabel)
 
 		for instruction in self.body.transformToAsm(containingFunction, self):
 			yield instruction
 
-		yield Asm('LJMP addr16', self.startlabel)
-		yield Asm('label', self.endlabel)
+		yield Instruction(SET, PC(), self.startlabel)
+		yield Instruction(Label, self.endlabel)
 
 	def stackUsage(self, functions):
 		return max(self.condition.stackUsage(functions), self.body.stackUsage(functions))

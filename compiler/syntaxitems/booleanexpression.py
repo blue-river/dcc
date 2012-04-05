@@ -44,7 +44,7 @@ class GetBit(BooleanExpressionBase):
 		bitSetLabel = nextlabel('getbit_set')
 		endLabel = nextlabel('getbit_end')
 
-		yield Instruction(IFB, Pop(), 1 << self.bit)
+		yield Instruction(IFB, Pop(), Literal(1 << self.bit))
 		yield Instruction(SET, PC(), bitSetLabel)
 		yield Instruction(SET, Push(), Literal(0))
 		yield Instruction(SET, PC(), endLabel)
@@ -117,13 +117,13 @@ class GreaterEquals(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Instruction('comment', '>=')
+		yield Instruction(Comment, '>=')
 
 		greaterEqualsLabel = nextlabel('geq_true')
 		endLabel = nextlabel('end')
 
-		yield Instruction(SET, A, Pop()) # right
-		yield Instruction(IFG, A, Pop())
+		yield Instruction(SET, TempStorage, Pop()) # right
+		yield Instruction(IFG, TempStorage, Pop())
 		yield Instruction(SET, PC(), greaterEqualsLabel)
 		yield Instruction(SET, Push(), Literal(0))
 		yield Instruction(SET, PC(), endLabel)
@@ -149,8 +149,8 @@ class GreaterThan(BooleanExpressionBase):
 		greaterLabel = nextlabel('gt_true')
 		endlabel = nextlabel('gt_end')
 
-		yield Instruction(SET, A, Pop()) # right
-		yield Instruction(IFG, Pop(), A)
+		yield Instruction(SET, TempStorage, Pop()) # right
+		yield Instruction(IFG, Pop(), TempStorage)
 		yield Instruction(SET, PC(), greaterLabel)
 		yield Instruction(SET, Push(), Literal(0))
 		yield Instruction(SET, PC(), endlabel)
@@ -176,8 +176,8 @@ class LessEquals(BooleanExpressionBase):
 		greaterLabel = nextlabel('gt_true')
 		endlabel = nextlabel('gt_end')
 
-		yield Instruction(SET, A, Pop()) # right
-		yield Instruction(IFG, Pop(), A)
+		yield Instruction(SET, TempStorage, Pop()) # right
+		yield Instruction(IFG, Pop(), TempStorage)
 		yield Instruction(SET, PC(), greaterLabel)
 		yield Instruction(SET, Push(), Literal(1))
 		yield Instruction(SET, PC(), endlabel)
@@ -198,13 +198,13 @@ class LessThan(BooleanExpressionBase):
 		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
-		yield Instruction('comment', '<')
+		yield Instruction(Comment, '<')
 
 		greaterEqualsLabel = nextlabel('geq_true')
 		endLabel = nextlabel('end')
 
-		yield Instruction(SET, A, Pop()) # right
-		yield Instruction(IFG, A, Pop())
+		yield Instruction(SET, TempStorage, Pop()) # right
+		yield Instruction(IFG, TempStorage, Pop())
 		yield Instruction(SET, PC(), greaterEqualsLabel)
 		yield Instruction(SET, Push(), Literal(1))
 		yield Instruction(SET, PC(), endLabel)

@@ -49,10 +49,10 @@ class FunctionBase(CodeItemBase):
 
 	def getRegisterForVariable(self, name):
 		if name in self.argdict:
-			return self.args.index(self.argdict[name]) + 2
+			return Registers[self.args.index(self.argdict[name]) + 2]
 
 		if name in self.localdict:
-			return self.locals.index(self.localdict[name]) + len(self.args) + 2
+			return Registers[self.locals.index(self.localdict[name]) + len(self.args) + 2]
 		
 		raise Exception("Internal error: unable to locate variable '%s' in function '%s'" % (name, self.name))
 
@@ -78,12 +78,12 @@ class FunctionBase(CodeItemBase):
 				yield Instruction(SET, Push(), Registers[i + 2])
 
 		for i in xrange(len(self.args)):
-			yield Instruction(SET, Registers[i + 2], i + ArgumentOffset)
+			yield Instruction(SET, Registers[i + 2], Pointer(i + ArgumentOffset))
 
 		for instruction in self.statementblock.transformToAsm(self, None):
 			yield instruction
 			
-		yield Instruction(Label, 'ret_' + self.name)
+		yield Instruction(Label, LabelReference('ret_' + self.name))
 
 		if self.saveVariables:
 			for i in xrange(len(self.args) + len(self.locals) - 1, -1, -1):
@@ -113,7 +113,7 @@ class PredefinedFunction(FunctionBase):
 		pass
 
 	def transformToAsm(self):
-		yield Instruction(Label, 'func_' + self.name)
+		yield Instruction(Label, LabelReference('func_' + self.name))
 
 		for instruction in self.asm:
 			yield instruction
@@ -124,7 +124,7 @@ class PredefinedFunction(FunctionBase):
 class Function(FunctionBase):
 
 	def transformToAsm(self):
-		yield Instruction(Label, 'func_' + self.name)
+		yield Instruction(Label, LabelReference('func_' + self.name))
 
 		for instruction in FunctionBase.transformToAsm(self):
 			yield instruction

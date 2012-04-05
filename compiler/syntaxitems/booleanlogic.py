@@ -13,8 +13,8 @@ class BooleanAnd(BooleanExpressionBase):
 
 		yield Instruction(Comment, 'boolean &&')
 
-		yield Instruction(SET, A, Pop())
-		yield Instruction(AND, Peek(), A)
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(AND, Peek(), TempStorage)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)
@@ -81,7 +81,7 @@ class BooleanNot(BooleanExpressionBase):
 
 		yield Instruction(Comment, 'boolean !')
 
-		yield Instruction(XOR, Peek(), 1)
+		yield Instruction(XOR, Peek(), Literal(1))
 
 	def stackUsage(self, functions):
 		return self.value.stackUsage(functions)
@@ -98,8 +98,8 @@ class BooleanOr(BooleanExpressionBase):
 
 		yield Instruction(Comment, 'boolean |')
 
-		yield Instruction(SET, A, Pop())
-		yield Instruction(BOR, Peek(), A)
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(BOR, Peek(), TempStorage)
 
 	def stackUsage(self, functions):
 		return max(self.left.stackUsage(functions), self.right.stackUsage(functions) + 1)

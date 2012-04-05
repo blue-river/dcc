@@ -17,8 +17,8 @@ class Addition(ExpressionBase):
 
 		yield Instruction(Comment, '+')
 
-		yield Instruction(SET, A, Pop())
-		yield Instruction(ADD, Peek(), A)
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(ADD, Peek(), TempStorage)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -35,8 +35,8 @@ class And(ExpressionBase):
 
 		yield Instruction(Comment, '&')
 
-		yield Instruction(SET, A, Pop())
-		yield Instruction(AND, Peek(), A)
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(AND, Peek(), TempStorage)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -86,9 +86,9 @@ class Call(ExpressionBase):
 			yield Instruction(SET, Literal(address), Pop())
 			address -= 1
 
-		yield Instruction(JSR, 'func_' + self.function)
+		yield Instruction(JSR, Literal('func_' + self.function))
 		# TODO: don't push for void functions.
-		yield Instruction(SET, Push(), O)
+		yield Instruction(SET, Push(), O())
 
 	def stackUsage(self, functions):
 		maxStack = 0
@@ -141,7 +141,7 @@ class Identifier(ExpressionBase):
 
 			location = containingFunction.identifiers[self.name].location
 
-			yield Instruction(SET, Push(), self.name)
+			yield Instruction(SET, Push(), Literal(self.name))
 		else:
 			# identifier is a local variable
 			yield Instruction(SET, Push(), containingFunction.getRegisterForVariable(self.name))
@@ -161,8 +161,8 @@ class Multiplication(ExpressionBase):
 
 		yield Instruction(Comment, '*')
 
-		yield Instruction(SET, A, Pop())
-		yield Instruction(MUL, Peek(), A)
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(MUL, Peek(), TempStorage)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -194,8 +194,8 @@ class Or(ExpressionBase):
 
 		yield Instruction(Comment, '|')
 
-		yield Instruction(SET, A, Pop())
-		yield Instruction(BOR, Peek(), A)
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(BOR, Peek(), TempStorage)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -212,8 +212,8 @@ class Subtraction(ExpressionBase):
 
 		yield Instruction(Comment, '-')
 
-		yield Instruction(SET, A, Pop())
-		yield Instruction(SUB, Peek(), A)
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(SUB, Peek(), TempStorage)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
@@ -230,8 +230,8 @@ class Xor(ExpressionBase):
 
 		yield Instruction(Comment, '^')
 
-		yield Instruction(SET, A, Pop())
-		yield Instruction(XOR, Peek(), A)
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(XOR, Peek(), TempStorage)
 
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
