@@ -81,12 +81,13 @@ TempStorage = A
 RepeatCounter = B
 ArgumentOffset = 0
 
-class RegisterPointer(object):
-	def __int__(self, register):
-		self.register = register
-
+class SimpleValue(object):
 	def size(self):
 		return 0
+
+class RegisterPointer(SimpleValue):
+	def __int__(self, register):
+		self.register = register
 
 	def asm(self):
 		return '[%s]' % self.register.register
@@ -102,45 +103,27 @@ class RegisterPointerOffset(object):
 	def asm(self):
 		return '[%d + %s]' % (self.offset, self.register.register)
 
-class Pop(object):
-	def size(self):
-		return 0
-
+class Pop(SimpleValue):
 	def asm(self):
 		return 'POP'
 
-class Peek(object):
-	def size(self):
-		return 0
-
+class Peek(SimpleValue):
 	def asm(self):
 		return 'PEEK'
 
-class Push(object):
-	def size(self):
-		return 0
-
+class Push(SimpleValue):
 	def asm(self):
 		return 'PUSH'
 
-class SP(object):
-	def size(self):
-		return 0
-
+class SP(SimpleValue):
 	def asm(self):
 		return 'SP'
 
-class PC(object):
-	def size(self):
-		return 0
-
+class PC(SimpleValue):
 	def asm(self):
 		return 'PC'
 
-class O(object):
-	def size(self):
-		return 0
-
+class O(SimpleValue):
 	def asm(self):
 		return 'O'
 
