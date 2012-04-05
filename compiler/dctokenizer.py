@@ -16,7 +16,6 @@ class DCTokenizer(object):
 		'else': 'ELSE',
 		'false': 'FALSE',
 		'if': 'IF',
-		'internal': 'INTERNAL',
 		'loop': 'LOOP',
 		'repeat': 'REPEAT',
 		'return': 'RETURN',

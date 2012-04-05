@@ -1,4 +1,5 @@
-from asmgenerator import Instruction, AsmSize
+from asmgenerator import *
+from pprint import pprint
 
 class AsmOptimizer(object):
 	'''
@@ -7,9 +8,9 @@ class AsmOptimizer(object):
 	larger program.
 	'''
 
-	condJumps = ('JZ rel', 'JNZ rel', 'JC rel', 'JNC rel', 'JB bit,rel', 'JNB bit,rel', 'JBC bit,rel', 'CJNE A,direct,rel', 'CJNE A,#data,rel', 'CJNE Rn,#data,rel', 'CJNE @Ri,#data,rel', 'DJNZ Rn,rel', 'DJNZ direct,rel')
-	uncondJumps = ('AJMP addr11', 'LJMP addr16', 'SJMP rel')
-	jumps = condJumps + uncondJumps
+	#condJumps = ('JZ rel', 'JNZ rel', 'JC rel', 'JNC rel', 'JB bit,rel', 'JNB bit,rel', 'JBC bit,rel', 'CJNE A,direct,rel', 'CJNE A,#data,rel', 'CJNE Rn,#data,rel', 'CJNE @Ri,#data,rel', 'DJNZ Rn,rel', 'DJNZ direct,rel')
+	#uncondJumps = ('AJMP addr11', 'LJMP addr16', 'SJMP rel')
+	#jumps = condJumps + uncondJumps
 
 	def __init__(self, program, options):
 		self.program = program
@@ -29,6 +30,7 @@ class AsmOptimizer(object):
 		while self.pos < len(self.program):
 			self.tryRemoveComment()
 
+			break
 			modified |= self.tryOptimizePushPopLocation()
 			modified |= self.tryOptimizePushPop()
 			modified |= self.tryOptimizePushDiscard()
@@ -52,74 +54,53 @@ class AsmOptimizer(object):
 		address = 0
 
 		for instruction in self.program:
-			if instruction.type == 'origin':
-				address = instruction.args[0]
-				instruction.address = address
-				continue
-
 			instruction.address = address
-			address += AsmSize[instruction.type]
+			address += instruction.size()
 
 	def locateLabels(self):
 		self.labels = {}
-		self.EQUs = {}
 		
 		for instruction in self.program:
-			if instruction.type == 'label':
-				if instruction.args[0] in self.labels:
+			if instruction.opcode == Label:
+				if instruction.a.name in self.labels:
 					raise Exception("Internal error: duplicate label '%s'" % instruction.args[0])
 
-				self.labels[instruction.args[0]] = instruction
-			elif instruction.type == 'EQU':
-				if instruction.args[0] in self.EQUs:
-					raise Exception("Internal error: duplicate EQU '%s'" % instruction.args[0])
-
-				self.EQUs[instruction.args[0]] = instruction
+				self.labels[instruction.a.name] = instruction
 
 	def mergeLabels(self):
 		for label in self.labels:
-			sourceLabel = self.labels[label].args[0]
+			sourceLabel = self.labels[label].a.name
 			index = self.program.index(self.labels[label])
 
-			if self.program[index + 1].type != 'label':
+			if self.program[index + 1].opcode != Label:
 				continue
 
-			while self.program[index + 1].type == 'label':
+			while self.program[index + 1].opcode == Label:
 				index += 1
 
-			targetLabel = self.program[index].args[0]
+			targetLabel = self.program[index].a.name
 
 			for instruction in self.program:
-				if instruction.type not in self.jumps:
-					continue
-
-				if instruction.args[-1] == sourceLabel:
-					instruction.args[-1] = targetLabel
+				if isinstance(instruction.a, LabelReference) and instruction.a.name == sourceLabel:
+					instruction.a.name = targetLabel
+				if isinstance(instruction.b, LabelReference) and instruction.b.name == sourceLabel:
+					instruction.b.name = targetLabel
 
 	def tryRemoveDeadLabels(self):
 		for label in self.labels:
 			self.labels[label].targeted = False
-		for EQU in self.EQUs:
-			self.EQUs[EQU].targeted = False
 
 		for instruction in self.program:
-			if instruction.type in ('label', 'EQU'):
+			if instruction.opcode in (Label, ):
 				continue
-			if instruction.args and instruction.args[-1] in self.labels:
-				self.labels[instruction.args[-1]].targeted = True
-
-			for arg in instruction.args:
-				if arg in self.EQUs:
-					self.EQUs[arg].targeted = True
+			elif instruction.opcode == JSR:
+				self.labels[instruction.a.name].targeted = True
+			elif isinstance(instruction.b, LabelReference) and instruction.b.name in self.labels:
+				self.labels[instruction.b.name].targeted = True
 
 		for label in self.labels:
 			if not self.labels[label].targeted:
 				index = self.program.index(self.labels[label])
-				self.remove(index, index)
-
-		for EQU in self.EQUs:
-			if not self.EQUs[EQU].targeted:
-				index = self.program.index(self.EQUs[EQU])
 				self.remove(index, index)
 
 	def tryEliminateDeadCode(self):
@@ -127,9 +108,6 @@ class AsmOptimizer(object):
 
 		for instruction in self.program:
 			instruction.reachable = False
-
-			if instruction.type == 'origin':
-				locationsToVisit.append(self.program.index(instruction))
 
 		while locationsToVisit:
 			location = locationsToVisit.pop()
@@ -141,10 +119,20 @@ class AsmOptimizer(object):
 			instruction.reachable = True
 
 			# quick hack
-			if instruction.type[-3:] == 'rel' or instruction.type[-6:] in ('addr11', 'addr16'):
-				locationsToVisit.append(self.program.index(self.labels[instruction.args[-1]]))
+			if instruction.opcode in (IFE, IFN, IFG, IFB):
+				locationsToVisit.append(location + 2)
+			elif instruction.opcode in (JSR,):
+				locationsToVisit.append(self.program.index(self.labels[instruction.a.name]))
+			elif isinstance(instruction.a, PC):
+				if instruction.opcode != SET:
+					raise Exception("Internal error: optimizer bailing out on unpredictable jump opcode")
+				if isinstance(instruction.b, Pop):
+					continue
+				if not isinstance(instruction.b, LabelReference):
+					print instruction.asm()
+					raise Exception("Internal error: optimizer bailing out on unpredictable jump target")
 
-			if instruction.type in ('RET', 'RETI', 'SJMP rel', 'AJMP addr11', 'LJMP addr16'):
+				locationsToVisit.append(self.program.index(self.labels[instruction.b.name]))
 				continue
 
 			locationsToVisit.append(location + 1)
@@ -154,7 +142,7 @@ class AsmOptimizer(object):
 		modified = False
 
 		while location < len(self.program):
-			if self.program[location].reachable or self.program[location].type == 'origin':
+			if self.program[location].reachable:
 				location += 1
 			else:
 				del self.program[location]
@@ -163,7 +151,7 @@ class AsmOptimizer(object):
 		return modified
 
 	def tryRemoveComment(self):
-		if self.get(0).type == 'comment':
+		if self.get(0).opcode == Comment:
 			if self.options.debugCodeGenerator:
 				self.get(-1).addMetadataAfter('comment', self.get(0).args[0])
 			self.remove(0, 0)
@@ -509,9 +497,6 @@ class AsmOptimizer(object):
 		return self.program[self.pos + offset]
 
 	def remove(self, start, end):
-		for asm in self.program[self.pos + start:self.pos + end + 1]:
-			self.program[self.pos + start - 1].metadataafter += asm.metadatabefore + asm.metadataafter
-
 		del self.program[self.pos + start:self.pos + end + 1]
 
 	def insert(self, offset, *asm):

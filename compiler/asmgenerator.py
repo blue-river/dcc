@@ -14,6 +14,9 @@ class Instruction(object):
 	def asm(self):
 		return self.opcode(self.a, self.b)
 
+	def __repr__(self):
+		return self.asm().strip()
+
 def SET(a, b):
 	return 'SET %s, %s' % (a.asm(), b.asm())
 def ADD(a, b):
@@ -46,7 +49,7 @@ def IFB(a, b):
 	return 'IFB %s, %s' % (a.asm(), b.asm())
 
 def JSR(a, b):
-	return 'ISR %s' % a.asm()
+	return 'JSR %s' % a.asm()
 
 def Comment(a, b):
 	return '\n; %s' % a
@@ -151,6 +154,9 @@ class Pointer(object):
 	def asm(self):
 		return '[%s]' % self.location
 
+class DataField(Pointer):
+	pass
+
 class Literal(object):
 	def __init__(self, value):
 		self.value = value
@@ -165,7 +171,7 @@ class Literal(object):
 
 class LabelReference(object):
 	def __init__(self, name):
-		self.name = name
+		self.name = name.replace('.', '__dot__')
 
 	def size(self):
 		return 1 # TODO
@@ -221,8 +227,7 @@ def transform(datafields, functions):
 	program = []
 	memoryAddresses = {}
 
-	internalMemoryAddress = 0x0E
-	externalMemoryAddress = 0x4000
+	memoryAddress = 0x4000
 
 	for datafield in datafields.values():
 		if datafield.constant:
@@ -231,35 +236,20 @@ def transform(datafields, functions):
 		try:
 			datafield.address
 		except AttributeError:
-			if datafield.location == 'internal':
-				if internalMemoryAddress == 0x80:
-					datafield.error('Ran out of internal address space for data fields!')
+			if memoryAddress == 0x5000:
+				# Use 0x5000 as an arbitrary limit. This allows for 4096 bytes of space.
+				# Allowing more is not useful right now; more code memory would be required.
+				datafield.error('Ran out of external address space for data fields!')
 
-				datafield.address = internalMemoryAddress
-				internalMemoryAddress += 1
+			datafield.address = memoryAddress
+			memoryAddress += 1
 
-				memoryAddresses[datafield.name] = ('internal', datafield.address)
-
-			elif datafield.location == 'external':
-				if externalMemoryAddress == 0x5000:
-					# Use 0x5000 as an arbitrary limit. This allows for 4096 bytes of space.
-					# Allowing more is not useful right now; more code memory would be required.
-					datafield.error('Ran out of external address space for data fields!')
-
-				datafield.address = externalMemoryAddress
-				externalMemoryAddress += 1
-
-				memoryAddresses[datafield.name] = ('external', datafield.address)
-			else:
-				raise Exception("Internal error: Unknown data field location '%s'" % datafield.location)
+			memoryAddresses[datafield.name] = ('external', datafield.address)
 
 		#program.append(Asm('EQU', datafield.name, datafield.address))
 
 	# stack pointer starts at the address of the last data field.
 	# the stack data actually begins at the next address.
-	stackStartAddress = internalMemoryAddress - 1
-
-	maxStackSize = 0xFF - stackStartAddress
 
 	#program.append(Asm('EQU', 'stack', stackStartAddress))
 
@@ -286,7 +276,8 @@ def transform(datafields, functions):
 
 	debugData = {'memoryAddresses': memoryAddresses}
 
-	return program, maxStackSize, internalMemoryAddress - 1, externalMemoryAddress - 1, debugData
+	# 0 = maxStackSize
+	return program, 0, memoryAddress - 1, debugData
 
 def programToAsm(program, options):
 	lines = []
@@ -326,7 +317,7 @@ def programToAsm(program, options):
 
 startCode = [
 	Instruction(Label, LabelReference('startcode')),
-	Instruction(SET, PC(), LabelReference('func_main__dot__main')),
+	Instruction(JSR, LabelReference('func_main__dot__main')),
 	Instruction(Label, LabelReference('mainexited')),
 	Instruction(SET, PC(), LabelReference('mainexited')),
 ]

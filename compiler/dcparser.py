@@ -59,23 +59,10 @@ class DCParser(object):
 		d.default = p[4]
 		p[0] = d
 
-	def p_internaldatafieldwithdefault(self, p):
-		'datafield : INTERNAL DATATYPE unqualifiedidentifier ASSIGN integer SEMICOLON'
-		d = DataField(self.filename, p.lineno(1), p[2], p[3])
-		d.location = 'internal'
-		d.default = p[5]
-		p[0] = d
-
 	def p_datafield(self, p):
 		'datafield : DATATYPE unqualifiedidentifier SEMICOLON'
 		d = DataField(self.filename, p.lineno(1), p[1], p[2])
 		d.location = 'external'
-		p[0] = d
-
-	def p_internaldatafield(self, p):
-		'datafield : INTERNAL DATATYPE unqualifiedidentifier SEMICOLON'
-		d = DataField(self.filename, p.lineno(1), p[2], p[3])
-		d.location = 'internal'
 		p[0] = d
 
 	def p_addr(self, p):

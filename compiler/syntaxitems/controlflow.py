@@ -42,19 +42,19 @@ class If(CodeItemBase):
 
 		yield Instruction(Comment, 'if')
 
-		thenlabel = nextlabel('if_then')
+		elselabel = nextlabel('if_else')
 		endlabel = nextlabel('if_end')
 
-		yield Instruction(IFE, Pop(), Literal(0))
-		yield Instruction(SET, SP(), thenlabel)
-
-		for instruction in self.else_.transformToAsm(containingFunction, containingLoop):
-			yield instruction
-
-		yield Instruction(SET, SP(), endlabel)
-		yield Instruction(Label, thenlabel)
+		yield Instruction(IFE, Pop(), Literal(1))
+		yield Instruction(SET, PC(), elselabel)
 
 		for instruction in self.then.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+
+		yield Instruction(SET, PC(), endlabel)
+		yield Instruction(Label, elselabel)
+
+		for instruction in self.else_.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 		
 		yield Instruction(Label, endlabel)
@@ -77,7 +77,7 @@ class Loop(CodeItemBase):
 		for instruction in self.body.transformToAsm(containingFunction, self):
 			yield instruction
 
-		yield Instruction(SET, SP(), self.startlabel)
+		yield Instruction(SET, PC(), self.startlabel)
 		yield Instruction(Label, self.endlabel)
 
 	def stackUsage(self, functions):

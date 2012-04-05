@@ -30,54 +30,32 @@ class SetBit(CodeItemBase):
 			for instruction in self.value.transformToAsm(containingFunction, containingLoop):
 				yield instruction
 
-		yield Instruction(Comment, 'setbit not yet supported')
-		# TODO
-		return
-
-		if not self.value.constantExpression:
-			yield Asm('POP direct', 'ACC')
-			yield Asm('MOV C,bit', 'ACC', 0)
+		yield Instruction(Comment, 'setbit')
 
 		if '.' in self.target:
 			# identifier is a data field
 			location = containingFunction.identifiers[self.target].location
 
-			if location == 'internal':
-				yield Asm('MOV direct,direct', 'ACC', self.target)
-			elif location == 'external':
-				yield Asm('MOV DPTR,#data16', self.target)
-				yield Asm('MOVX A,@DPTR')
-			else:
-				raise Exception("Internal error: unknown data type location '%s'" % location)
-
-			if self.value.constantExpression:
-				if self.value.value:
-					yield Asm('SETB bit', 'ACC', self.bit)
-				else:
-					yield Asm('CLR bit', 'ACC', self.bit)
-			else:
-				yield Asm('MOV bit,C', 'ACC', self.bit)
-
-			if location == 'internal':
-				yield Asm('MOV direct,direct', self.target, 'ACC')
-			elif location == 'external':
-				yield Asm('MOVX @DPTR,A')
-			else:
-				raise Exception("Internal error: unknown data type location '%s'" % location) 
+			target = Pointer(self.target)
 		else:
-			# identifier is a local variable
-			yield Asm('MOV direct,Rn', 'ACC', containingFunction.getRegisterForVariable(self.target))
+			target = containingFunction.getRegisterForVariable(self.target)
 
-			if self.value.constantExpression:
-				if self.value.value:
-					yield Asm('SETB bit', 'ACC', self.bit)
-				else:
-					yield Asm('CLR bit', 'ACC', self.bit)
+		if self.value.constantExpression:
+			if self.value.value:
+				yield Instruction(BOR, target, Literal(1 << self.bit))
 			else:
-				yield Asm('MOV bit,C', 'ACC', self.bit)
+				yield Instruction(AND, target, Literal(0xffff ^ (1 << self.bit)))
+		else:
+			yield Instruction(IFE, Pop(), Literal(0))
+			yield Instruction(SET, PC(), clearBitLabel)
 
-			yield Asm('MOV Rn,direct', containingFunction.getRegisterForVariable(self.target), 'ACC')
+			yield Instruction(BOR, target, Literal(1 << self.bit))
+			yield Instruction(SET, PC(), endLabel)
 
+			yield Instruction(Label, clearBitLabel)
+			yield Instruction(AND, target, Literal(0xffff ^ (1 << self.bit)))
+
+			yield Instruction(Label, endLabel)
 
 	def stackUsage(self, functions):
 		return self.value.stackUsage(functions)
@@ -158,18 +136,10 @@ class Decrement(CodeItemBase):
 			# identifier is a data field
 			location = containingFunction.identifiers[self.target].location
 
-			if location == 'internal':
-				yield Asm('DEC direct', self.target)
-			elif location == 'external':
-				yield Asm('MOV DPTR,#data16', self.target)
-				yield Asm('MOVX A,@DPTR')
-				yield Asm('DEC ACC')
-				yield Asm('MOVX @DPTR,A')
-			else:
-				raise Exception("Internal error: unknown data type location '%s'" % location) 
+			yield Instruction(SUB, Pointer(self.target), 1)
 		else:
 			# identifier is a local variable
-			yield Asm('DEC direct', containingFunction.getRegisterForVariable(self.target))
+			yield Instruction(SUB, containingFunction.getRegisterForVariable(self.target), 1)
 
 	def stackUsage(self, functions):
 		return 0
@@ -196,18 +166,10 @@ class Increment(CodeItemBase):
 			# identifier is a data field
 			location = containingFunction.identifiers[self.target].location
 
-			if location == 'internal':
-				yield Asm('INC direct', self.target)
-			elif location == 'external':
-				yield Asm('MOV DPTR,#data16', self.target)
-				yield Asm('MOVX A,@DPTR')
-				yield Asm('INC ACC')
-				yield Asm('MOVX @DPTR,A')
-			else:
-				raise Exception("Internal error: unknown data type location '%s'" % location) 
+			yield Instruction(ADD, Pointer(self.target), 1)
 		else:
 			# identifier is a local variable
-			yield Asm('INC direct', containingFunction.getRegisterForVariable(self.target))
+			yield Instruction(ADD, containingFunction.getRegisterForVariable(self.target), 1)
 
 	def stackUsage(self, functions):
 		return 0
@@ -222,7 +184,7 @@ class Return(CodeItemBase):
 
 		yield Instruction(Comment, 'return')
 
-		yield Instruction(SET, PC(), Literal('ret_' + containingFunction.name))
+		yield Instruction(SET, PC(), LabelReference('ret_' + containingFunction.name))
 
 	def stackUsage(self, functions):
 		return 0
@@ -240,7 +202,7 @@ class ReturnValue(CodeItemBase):
 
 		yield Instruction(Comment, 'return')
 		yield Instruction(SET, O(), Pop())
-		yield Instruction(SET, PC(), Literal('ret_' + containingFunction.name))
+		yield Instruction(SET, PC(), LabelReference('ret_' + containingFunction.name))
 
 	def stackUsage(self, functions):
 		return self.value.stackUsage(functions)

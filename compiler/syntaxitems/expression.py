@@ -86,7 +86,7 @@ class Call(ExpressionBase):
 			yield Instruction(SET, Literal(address), Pop())
 			address -= 1
 
-		yield Instruction(JSR, Literal('func_' + self.function))
+		yield Instruction(JSR, LabelReference('func_' + self.function))
 		# TODO: don't push for void functions.
 		yield Instruction(SET, Push(), O())
 
@@ -141,7 +141,7 @@ class Identifier(ExpressionBase):
 
 			location = containingFunction.identifiers[self.name].location
 
-			yield Instruction(SET, Push(), Literal(self.name))
+			yield Instruction(SET, Push(), DataField(self.name))
 		else:
 			# identifier is a local variable
 			yield Instruction(SET, Push(), containingFunction.getRegisterForVariable(self.name))

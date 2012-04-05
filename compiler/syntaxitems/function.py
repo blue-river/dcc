@@ -73,17 +73,21 @@ class FunctionBase(CodeItemBase):
 			self.identifiers[local.name] = local
 
 	def transformToAsm(self):
+		yield Instruction(Comment, 'start function')
+
 		if self.saveVariables:
 			for i in xrange(len(self.args) + len(self.locals)):
 				yield Instruction(SET, Push(), Registers[i + 2])
 
 		for i in xrange(len(self.args)):
-			yield Instruction(SET, Registers[i + 2], Pointer(i + ArgumentOffset))
+			yield Instruction(SET, Registers[i + 2], Literal(i + ArgumentOffset))
 
 		for instruction in self.statementblock.transformToAsm(self, None):
 			yield instruction
 			
 		yield Instruction(Label, LabelReference('ret_' + self.name))
+
+		yield Instruction(Comment, 'end function')
 
 		if self.saveVariables:
 			for i in xrange(len(self.args) + len(self.locals) - 1, -1, -1):
@@ -130,7 +134,6 @@ class Function(FunctionBase):
 			yield instruction
 
 		yield Instruction(SET, PC(), Pop())
-		#yield Asm('RET')
 
 class MainFunction(Function):
 
