@@ -30,15 +30,14 @@ class AsmOptimizer(object):
 		while self.pos < len(self.program):
 			self.tryRemoveComment()
 
-			break
-			modified |= self.tryOptimizePushPopLocation()
-			modified |= self.tryOptimizePushPop()
-			modified |= self.tryOptimizePushDiscard()
-			modified |= self.tryOptimizeMov()
-			modified |= self.tryOptimizeCondSwap()
-			modified |= self.tryOptimizeCondJump()
-			modified |= self.tryOptimizeLjmp()
-			modified |= self.tryOptimizeTailCall()
+			#modified |= self.tryOptimizePushPopLocation()
+			#modified |= self.tryOptimizePushPop()
+			#modified |= self.tryOptimizePushDiscard()
+			#modified |= self.tryOptimizeMov()
+			#modified |= self.tryOptimizeCondSwap()
+			#modified |= self.tryOptimizeCondJump()
+			#modified |= self.tryOptimizeLjmp()
+			#modified |= self.tryOptimizeTailCall()
 
 			self.pos += 1
 
@@ -152,8 +151,6 @@ class AsmOptimizer(object):
 
 	def tryRemoveComment(self):
 		if self.get(0).opcode == Comment:
-			if self.options.debugCodeGenerator:
-				self.get(-1).addMetadataAfter('comment', self.get(0).args[0])
 			self.remove(0, 0)
 
 	def tryOptimizePushDiscard(self):

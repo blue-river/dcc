@@ -56,7 +56,7 @@ class DCCompiler(object):
 		if options.verboseprogress:
 			print 'Generating assembly...'
 
-		program, maxStackSize, memoryEndAddress, newDebugData = asmgenerator.transform(datafields, functions)
+		program, maxStackSize, memoryEndAddress = asmgenerator.transform(datafields, functions)
 
 		if options.optimize:
 			if options.verboseprogress:

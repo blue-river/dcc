@@ -34,9 +34,7 @@ class SetBit(CodeItemBase):
 
 		if '.' in self.target:
 			# identifier is a data field
-			location = containingFunction.identifiers[self.target].location
-
-			target = Pointer(self.target)
+			target = DataField(containingFunction.identifiers[self.target])
 		else:
 			target = containingFunction.getRegisterForVariable(self.target)
 
@@ -88,9 +86,9 @@ class Assignment(CodeItemBase):
 
 		if '.' in self.target:
 			# identifier is a data field
-			location = containingFunction.identifiers[self.target].location
+			dataField = containingFunction.identifiers[self.target]
 
-			yield Instruction(SET, Pointer(self.target), Pop())
+			yield Instruction(SET, DataField(dataField), Pop())
 		else:
 			# identifier is a local variable
 			yield Instruction(SET, containingFunction.getRegisterForVariable(self.target), Pop())

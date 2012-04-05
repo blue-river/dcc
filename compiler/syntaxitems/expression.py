@@ -139,9 +139,9 @@ class Identifier(ExpressionBase):
 		elif '.' in self.name:
 			# identifier is a data field
 
-			location = containingFunction.identifiers[self.name].location
+			field = containingFunction.identifiers[self.name]
 
-			yield Instruction(SET, Push(), DataField(self.name))
+			yield Instruction(SET, Push(), DataField(field))
 		else:
 			# identifier is a local variable
 			yield Instruction(SET, Push(), containingFunction.getRegisterForVariable(self.name))

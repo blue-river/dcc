@@ -55,20 +55,17 @@ class DCParser(object):
 	def p_datafieldwithdefault(self, p):
 		'datafield : DATATYPE unqualifiedidentifier ASSIGN integer SEMICOLON'
 		d = DataField(self.filename, p.lineno(1), p[1], p[2])
-		d.location = 'external'
 		d.default = p[4]
 		p[0] = d
 
 	def p_datafield(self, p):
 		'datafield : DATATYPE unqualifiedidentifier SEMICOLON'
 		d = DataField(self.filename, p.lineno(1), p[1], p[2])
-		d.location = 'external'
 		p[0] = d
 
 	def p_addr(self, p):
 		'datafield : ADDR DATATYPE unqualifiedidentifier ASSIGN integer SEMICOLON'
 		d = DataField(self.filename, p.lineno(1), p[2], p[3])
-		d.location = 'external'
 		# TODO check range
 		d.address = p[5]
 		p[0] = d

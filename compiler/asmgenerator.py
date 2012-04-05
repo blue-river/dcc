@@ -155,7 +155,8 @@ class Pointer(object):
 		return '[%s]' % self.location
 
 class DataField(Pointer):
-	pass
+	def __init__(self, location):
+		Pointer.__init__(self, dataFieldAddress(location))
 
 class Literal(object):
 	def __init__(self, value):
@@ -223,28 +224,28 @@ def nextlabel(name = 'unnamed'):
 
 	return LabelReference('%s_label_%X' % (name, thislabel))
 
+memoryAddresses = {}
+memoryAddress = 0x4000
+
+def dataFieldAddress(dataField):
+	global memoryAddress
+
+	if dataField.constant:
+		raise Exception('Internal error: cannot assign address to constant')
+
+	if dataField.name not in memoryAddresses:
+		if memoryAddress == 0x5000:
+			# Use 0x5000 as an arbitrary limit. This allows for 4096 bytes of space.
+			# Allowing more is not useful right now; more code memory would be required.
+			dataField.error('Ran out of external address space for data fields!')
+
+		memoryAddresses[dataField.name] = memoryAddress
+		memoryAddress += 1
+
+	return memoryAddresses[dataField.name]
+
 def transform(datafields, functions):
 	program = []
-	memoryAddresses = {}
-
-	memoryAddress = 0x4000
-
-	for datafield in datafields.values():
-		if datafield.constant:
-			continue
-
-		try:
-			datafield.address
-		except AttributeError:
-			if memoryAddress == 0x5000:
-				# Use 0x5000 as an arbitrary limit. This allows for 4096 bytes of space.
-				# Allowing more is not useful right now; more code memory would be required.
-				datafield.error('Ran out of external address space for data fields!')
-
-			datafield.address = memoryAddress
-			memoryAddress += 1
-
-			memoryAddresses[datafield.name] = ('external', datafield.address)
 
 		#program.append(Asm('EQU', datafield.name, datafield.address))
 
@@ -274,10 +275,8 @@ def transform(datafields, functions):
 		index = len(program)
 		program += function.transformToAsm()
 
-	debugData = {'memoryAddresses': memoryAddresses}
-
 	# 0 = maxStackSize
-	return program, 0, memoryAddress - 1, debugData
+	return program, 0, memoryAddress - 1
 
 def programToAsm(program, options):
 	lines = []
