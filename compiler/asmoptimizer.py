@@ -31,7 +31,7 @@ class AsmOptimizer(object):
 			self.tryRemoveComment()
 
 			#modified |= self.tryOptimizePushPopLocation()
-			#modified |= self.tryOptimizePushPop()
+			modified |= self.tryOptimizePushPop()
 			#modified |= self.tryOptimizePushDiscard()
 			#modified |= self.tryOptimizeMov()
 			#modified |= self.tryOptimizeCondSwap()
@@ -255,16 +255,20 @@ class AsmOptimizer(object):
 		if not self.canGet(1):
 			return False
 
-		if not (self.get(0).type == 'PUSH direct' and self.get(1).type == 'POP direct'):
+		if not (self.get(0).opcode == SET and isinstance(self.get(0).a, Push)):
+			return False
+		if isinstance(self.get(0).b, (Push, Peek, Pop)):
+			return False
+		if not isinstance(self.get(1).b, Pop):
 			return False
 
-		source = self.get(0).args[0]
-		target = self.get(1).args[0]
+		source = self.get(0)
+		target = self.get(1)
 
 		self.remove(0,1)
 
-		if source != target:
-			self.insert(0, Asm('MOV direct,direct', target, source))
+		if source.b.asm() != target.a.asm():
+			self.insert(0, Instruction(target.opcode, target.a, source.b))
 		
 		return True
 
