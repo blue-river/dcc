@@ -48,7 +48,7 @@ class DCCompiler(object):
 
 			self.optimizeSyntaxTree(datafields, functions)
 
-		print 'Max stack usage: %d bytes' % (functions['main.main'].stackUsage(functions) + 2)
+		print 'Max stack usage: %d words' % (functions['main.main'].stackUsage(functions) + 2)
 
 		if options.optimize:
 			print 'Note: stack usage could be less, because optimization is enabled'
@@ -56,7 +56,7 @@ class DCCompiler(object):
 		if options.verboseprogress:
 			print 'Generating assembly...'
 
-		program, maxStackSize, memoryEndAddress = asmgenerator.transform(datafields, functions)
+		program, memoryEndAddress = asmgenerator.transform(datafields, functions)
 
 		if options.optimize:
 			if options.verboseprogress:
@@ -69,7 +69,7 @@ class DCCompiler(object):
 
 		self.checkCodeSize(program)
 
-		print 'Stack space available: %d bytes' % maxStackSize
+		print 'Stack space available: %d words' % (0xffff - memoryEndAddress)
 
 		if options.verboseinfo:
 			if memoryEndAddress >= 0x4000:
