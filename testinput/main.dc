@@ -6,8 +6,19 @@ int baz = 10;
 addr int foo = 0xFE00;
 addr int bar = 0xFE;
 
+void tail1()
+{
+	tail2();
+}
+
+void tail2()
+{
+}
+
 void main()
 {
+	tail1();
+
 	foo.main();
 
 	pointers.test(0);

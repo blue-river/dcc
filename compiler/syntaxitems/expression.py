@@ -105,14 +105,18 @@ class Call(ExpressionBase):
 			for asm in arg.transformToAsm(containingFunction, containingLoop):
 				yield asm
 
-		yield Instruction(Comment, 'call')
+
+		if (self.arglist):
+			yield Instruction(Comment, 'write arguments')
 
 		# TODO
-		address = len(self.arglist)
+		address = ArgumentOffset + len(self.arglist)
 
 		for arg in self.arglist:
-			yield Instruction(SET, Literal(address), Pop())
 			address -= 1
+			yield Instruction(SET, Pointer(address), Pop())
+
+		yield Instruction(Comment, 'call')
 
 		yield Instruction(JSR, LabelReference('func_' + self.function))
 		# TODO: don't push for void functions.

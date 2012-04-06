@@ -32,12 +32,12 @@ class AsmOptimizer(object):
 
 			#modified |= self.tryOptimizePushPopLocation()
 			modified |= self.tryOptimizePushPop()
-			#modified |= self.tryOptimizePushDiscard()
+			modified |= self.tryOptimizePushDiscard()
 			#modified |= self.tryOptimizeMov()
 			#modified |= self.tryOptimizeCondSwap()
 			#modified |= self.tryOptimizeCondJump()
 			#modified |= self.tryOptimizeLjmp()
-			#modified |= self.tryOptimizeTailCall()
+			modified |= self.tryOptimizeTailCall()
 
 			self.pos += 1
 
@@ -157,8 +157,11 @@ class AsmOptimizer(object):
 		if not self.canGet(1):
 			return False
 
-		if not (self.get(0).type == 'PUSH direct' and self.get(1).type == 'DEC direct' and self.get(1).args[0] == 'SP'):
+		if not (self.get(1).opcode == ADD and isinstance(self.get(1).a, SP) and isinstance(self.get(1).b, Literal) and self.get(1).b.value == 1):
 			return False
+
+		if not (self.get(0).opcode in (SET, MOD, AND, BOR, XOR) and isinstance(self.get(0).a, Push) and not isinstance(self.get(0).b, (Push, Pop))):
+				return False
 
 		self.remove(0, 1)
 		return True
@@ -276,10 +279,14 @@ class AsmOptimizer(object):
 		if not self.canGet(1):
 			return False
 
-		if not (self.get(0).type in ('LCALL addr16', 'ACALL addr11') and self.get(1).type == 'RET'):
+		if not (self.get(0).opcode == JSR and self.get(1).opcode == SET and isinstance(self.get(1).a, PC) and isinstance(self.get(1).b, Pop)):
 			return False
 
-		self.get(0).type = 'LJMP addr16'
+		instr = self.get(0)
+
+		instr.opcode = SET
+		instr.b = instr.a
+		instr.a = PC()
 		return True
 
 	def tryOptimizeMov(self):

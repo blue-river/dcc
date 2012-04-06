@@ -79,8 +79,11 @@ class FunctionBase(CodeItemBase):
 			for i in xrange(len(self.args) + len(self.locals)):
 				yield Instruction(SET, Push(), Registers[i + 2])
 
+		if (self.args):
+			yield Instruction(Comment, 'read arguments')
+
 		for i in xrange(len(self.args)):
-			yield Instruction(SET, Registers[i + 2], Literal(i + ArgumentOffset))
+			yield Instruction(SET, Registers[i + 2], Pointer(i + ArgumentOffset))
 
 		for instruction in self.statementblock.transformToAsm(self, None):
 			yield instruction

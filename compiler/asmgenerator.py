@@ -79,7 +79,7 @@ J = Register('J')
 Registers = A, B, C, X, Y, Z, I, J
 TempStorage = A
 RepeatCounter = B
-ArgumentOffset = 0
+ArgumentOffset = 0x4000 - 6
 
 class SimpleValue(object):
 	def size(self):
