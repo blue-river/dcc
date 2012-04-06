@@ -163,14 +163,6 @@ class LabelReference(object):
 	def asm(self):
 		return self.name
 
-# is this needed?
-def replaceDot(arg):
-	# hack
-	if not isinstance(arg, str):
-		return arg
-
-	return arg.replace('.', '__dot__')
-
 
 def count(program):
 	instructions = 0
