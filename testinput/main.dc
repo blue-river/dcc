@@ -10,6 +10,8 @@ void main()
 {
 	foo.main();
 
+	pointers.test(0);
+
 	boolean.comparisons(42 | ~0x20 & 0b1010);
 
 	counter = 0;

@@ -25,9 +25,11 @@ class DCTokenizer(object):
 	}
 
 	tokens = (
-		'AND',
+		'AMPERSAND',
 		'ANDASSIGN',
 		'ASSIGN',
+		'ASTERISK',
+		'ASTERISKASSIGN',
 		'BINARY',
 		'BITOPERATOR',
 		'BOOLEANAND',
@@ -58,23 +60,23 @@ class DCTokenizer(object):
 		'RIGHTBRACE',
 		'RIGHTPAREN',
 		'SEMICOLON',
-		'TIMES',
-		'TIMESASSIGN',
+		'SLASH',
 		'XOR',
 	) + tuple(set(reserved.values()))
 
 	# assignment operators
 	t_ANDASSIGN = r'&='
 	t_ASSIGN = r'='
+	t_ASTERISKASSIGN = r'\*='
 	t_DECREMENT = r'--'
 	t_INCREMENT = r'\+\+'
 	t_MINUSASSIGN = r'-='
 	t_ORASSIGN = r'\|='
 	t_PLUSASSIGN = r'\+='
-	t_TIMESASSIGN = r'\*='
 
 	# operators
-	t_AND = r'&'
+	t_AMPERSAND = r'&'
+	t_ASTERISK = r'\*'
 	t_BITOPERATOR = r'@'
 	t_BOOLEANAND = r'&&'
 	t_BOOLEANNOT = r'!'
@@ -89,7 +91,7 @@ class DCTokenizer(object):
 	t_NOTEQUALS = r'!='
 	t_OR = r'\|'
 	t_PLUS = r'\+'
-	t_TIMES = r'\*'
+	t_SLASH = r'/'
 	t_XOR = r'\^'
 
 	# delimiters

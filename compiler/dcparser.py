@@ -18,12 +18,12 @@ class DCParser(object):
 	precedence = (
 		('left', 'OR'),
 		('left', 'XOR'),
-		('left', 'AND'),
+		('left', 'AMPERSAND'),
 		('left', 'BOOLEANOR'),
 		('left', 'BOOLEANAND'),
 		('left', 'EQUALS', 'NOTEQUALS'),
 		('left', 'PLUS', 'MINUS'),
-		('left', 'TIMES'),
+		('left', 'ASTERISK', 'SLASH'),
 		('right', 'NOT', 'BOOLEANNOT'),
 	)
 
@@ -200,6 +200,14 @@ class DCParser(object):
 		'expression : LEFTPAREN expression RIGHTPAREN'
 		p[0] = p[2]
 
+	def p_dereference(self, p):
+		'expression : ASTERISK expression'
+		p[0] = Dereference(self.filename, p.lineno(1), p[2])
+
+	def p_addressof(self, p):
+		'expression : AMPERSAND identifier'
+		p[0] = AddressOf(self.filename, p.lineno(1), p[2])
+
 # boolean expressions
 
 	def p_booleanconstant(self, p):
@@ -270,11 +278,15 @@ class DCParser(object):
 		p[0] = Subtraction(self.filename, p.lineno(2), p[1], p[3])
 
 	def p_binaryoperatortimes(self, p):
-		'expression : expression TIMES expression'
+		'expression : expression ASTERISK expression'
 		p[0] = Multiplication(self.filename, p.lineno(2), p[1], p[3])
 
+	def p_binaryoperatordivision(self, p):
+		'expression : expression SLASH expression'
+		raise Exception('Not implemented')
+
 	def p_binaryoperatorand(self, p):
-		'expression : expression AND expression'
+		'expression : expression AMPERSAND expression'
 		p[0] = And(self.filename, p.lineno(2), p[1], p[3])
 
 	def p_binaryoperatoror(self, p):
@@ -314,7 +326,7 @@ class DCParser(object):
 		p[0] = Assignment(self.filename, p.lineno(2), p[1], op)
 
 	def p_multiplyassign(self, p):
-		'statement : identifier TIMESASSIGN expression SEMICOLON'
+		'statement : identifier ASTERISKASSIGN expression SEMICOLON'
 		i = Identifier(self.filename, p.lineno(1), p[1])
 		expr = p[3]
 		op = Multiplication(self.filename, p.lineno(2), i, expr)

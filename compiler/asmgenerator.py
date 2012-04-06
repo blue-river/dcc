@@ -86,7 +86,7 @@ class SimpleValue(object):
 		return 0
 
 class RegisterPointer(SimpleValue):
-	def __int__(self, register):
+	def __init__(self, register):
 		self.register = register
 
 	def asm(self):

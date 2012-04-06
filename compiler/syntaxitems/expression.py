@@ -23,6 +23,34 @@ class Addition(ExpressionBase):
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
 
+class AddressOf(ExpressionBase):
+	argumentNames = ('field',)
+	passiveArguments = ('field',)
+
+	def transformToAsm(self, containingFunction, containingLoop):
+		yield Instruction(Comment, '&')
+
+		field = containingFunction.identifiers[self.field]
+		yield Instruction(SET, Push(), Literal(dataFieldAddress(field)))
+
+	def verifyIdentifiers(self, datafields, functions, containingFunction):
+		ExpressionBase.verifyIdentifiers(self, datafields, functions, containingFunction)
+
+		if self.field in containingFunction.identifiers:
+			self.error("Cannot get address of variable '%s'; only possible for data fields" % self.field)
+
+		qualName = '%s.%s' % (self.containingModule, self.field)
+		if qualName in datafields:
+			self.field = qualName
+		else:
+			self.error("Data field '%s' not found" % self.field)
+
+		containingFunction.identifiers[self.field].read = True
+		containingFunction.identifiers[self.field].assigned = True
+	
+	def stackUsage(self, functions):
+		return 1
+
 class And(ExpressionBase):
 
 	argumentNames = ('left', 'right')
@@ -145,6 +173,21 @@ class Identifier(ExpressionBase):
 		else:
 			# identifier is a local variable
 			yield Instruction(SET, Push(), containingFunction.getRegisterForVariable(self.name))
+
+	def stackUsage(self, functions):
+		return 1
+
+class Dereference(ExpressionBase):
+	argumentNames = ('expr',)
+
+	def transformToAsm(self, containingFunction, containingLoop):
+		for instruction in self.expr.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+
+		yield Instruction(Comment, 'dereference')
+
+		yield Instruction(SET, A, Pop())
+		yield Instruction(SET, Push(), RegisterPointer(A))
 
 	def stackUsage(self, functions):
 		return 1

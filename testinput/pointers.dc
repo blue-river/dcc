@@ -1,0 +1,22 @@
+int field;
+int field2;
+
+void test(int arg) {
+	int local;
+	
+	*local;
+	*arg;
+	*field;
+	*42;
+
+	****************42;
+
+	&field;
+	&field2;
+
+	&field & &field2;
+
+	*&field;
+
+	&field + &field2;
+}
