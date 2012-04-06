@@ -194,7 +194,7 @@ class Dereference(ExpressionBase):
 		yield Instruction(SET, Push(), RegisterPointer(A))
 
 	def stackUsage(self, functions):
-		return 1
+		return 0
 
 class Multiplication(ExpressionBase):
 	

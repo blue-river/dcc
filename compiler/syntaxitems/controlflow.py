@@ -120,7 +120,7 @@ class Repeat(CodeItemBase):
 		yield Instruction(SET, RepeatCounter, Pop())
 
 	def stackUsage(self, functions):
-		return max(self.repeatcount.stackUsage(functions), self.body.stackUsage(functions) + 1)
+		return max(self.repeatcount.stackUsage(functions), self.body.stackUsage(functions)) + 1
 
 class While(CodeItemBase):
 
