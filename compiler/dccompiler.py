@@ -64,7 +64,8 @@ class DCCompiler(object):
 
 			self.optimizeAsm(options, program)
 
-		self.printAsmStatistics(program)
+		if not options.verboseinfo or not options.verboseprogress:
+			self.printAsmStatistics(program)
 
 		self.checkCodeSize(program)
 
