@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Dcc by zr40</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/zr40/dcc">Fork On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/zr40/dcc/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/zr40/dcc/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Dcc</h1>
+          <p>A fast optimizing compiler targeting the DCPU-16.</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/zr40">zr40</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h3>DCC</h3>
+
+<p>DCC is a fast optimizing compiler for the DC language, targeting the <a href="http://0x10c.com/doc/dcpu-16.txt">DCPU-16</a>.
+DC is a language with a simple C-like syntax. </p>
+
+<p>A DC program consists of the .dc source files in the current directory, along with source files in any specified module search path. Each .dc source file contains the code for the module with the same name.</p>
+
+<p>This is a simple DC program showing the syntax:</p>
+
+<pre><code>int foo = 4;
+int answer;
+
+void main()
+{
+    int bar;
+
+    bar = 3;
+
+    while (foo != 2)
+    {
+        foo = bar;
+        bar--;
+    }
+
+    doTheFoo(foo);
+
+    setAnswer(&amp;answer);
+}
+
+void doTheFoo(int bar)
+{
+    foo = bar + 2;
+}
+
+void setAnswer(int answer)
+{
+    *answer = 42;
+}
+</code></pre>
+
+<h3>DC language</h3>
+
+<p>The basic unit of compilation is a module. Compilation starts with the <code>main</code> module, which must contain the <code>main</code> function.</p>
+
+<p>To access methods from another module, prefix their name with the module name and a period.</p>
+
+<h3>Dependencies</h3>
+
+<p>DCC requires Python 2.7 and PLY. PLY can be installed using <code>easy_install ply</code>.</p>
+
+<p>Add the DCC directory to the <code>PATH</code> to use dcc.py easily in any directory.</p>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><!--<![endif]-->
+  </body>
+</html>
