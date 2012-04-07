@@ -46,10 +46,10 @@ class FunctionBase(CodeItemBase):
 
 	def getLocationForVariable(self, name):
 		if name in self.argdict:
-			return RegisterPointerOffset(C, self.args.index(self.argdict[name]) + 1)
+			return RegisterPointerOffset(C, self.args.index(self.argdict[name]) + 2)
 
 		if name in self.localdict:
-			return RegisterPointerOffset(C, -self.locals.index(self.localdict[name]))
+			return RegisterPointerOffset(C, -1 - self.locals.index(self.localdict[name]))
 		
 		raise Exception("Internal error: unable to locate variable '%s' in function '%s'" % (name, self.name))
 
