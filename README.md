@@ -15,7 +15,7 @@ easy_install from [http://pypi.python.org/pypi/setuptools]().
 Windows users: after installing `easy_install`, add `C:\Python27\Scripts` (assuming
 Python is installed in `C:\Python27`) to the `PATH`.
 
-After installing Python and `easy_install`, install PLY and PySerial using
+After installing Python and `easy_install`, install PLY using
 `easy_install`:
 
     easy_install ply
