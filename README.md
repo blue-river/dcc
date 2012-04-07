@@ -20,7 +20,7 @@ After installing Python and `easy_install`, install PLY using
 
     easy_install ply
 
-Optionally, you can add the SCC directory to the PATH. This allows you to use
+Optionally, you can add the DCC directory to the PATH. This allows you to use
 dcc.py easily in any directory.
 
 # Credits
