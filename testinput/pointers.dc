@@ -19,4 +19,6 @@ void test(int arg) {
 	*&field;
 
 	&field + &field2;
+
+	*42 = 42;
 }

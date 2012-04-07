@@ -354,6 +354,12 @@ class DCParser(object):
 		'statement : identifier DECREMENT SEMICOLON'
 		p[0] = Decrement(self.filename, p.lineno(2), p[1])
 
+# dereferenced assignment
+
+	def p_derefassignment(self, p):
+		'statement : ASTERISK expression ASSIGN expression SEMICOLON'
+		p[0] = DerefAssignment(self.filename, p.lineno(3), p[2], p[4])
+
 # call, return
 
 	def p_call(self, p):

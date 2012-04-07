@@ -142,6 +142,23 @@ class Decrement(CodeItemBase):
 	def stackUsage(self, functions):
 		return 0
 
+class DerefAssignment(CodeItemBase):
+
+	argumentNames = ('target', 'value')
+
+	def transformToAsm(self, containingFunction, containingLoop):
+		for instruction in self.value.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+		for instruction in self.target.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+
+		yield Instruction(Comment, 'derefassignment')
+		yield Instruction(SET, A, Pop())
+		yield Instruction(SET, RegisterPointer(A), Pop())
+
+	def stackUsage(self, functions):
+		return self.value.stackUsage(functions)
+
 class Increment(CodeItemBase):
 
 	argumentNames = ('target',)

@@ -6,5 +6,5 @@ from datafield import ConstantDataField, DataField, LocalVariable
 from expression import Addition, AddressOf, And, Call, Constant, Dereference, Identifier, Multiplication, Not, Or, Subtraction, Xor
 from function import Function, MainFunction, PredefinedFunction
 from module import Module
-from statement import Assignment, Decrement, Discard, Increment, Return, ReturnValue, SetBit
+from statement import Assignment, Decrement, DerefAssignment, Discard, Increment, Return, ReturnValue, SetBit
 from statementblock import StatementBlock
