@@ -33,10 +33,8 @@ class AsmOptimizer(object):
 			#modified |= self.tryOptimizePushPopLocation()
 			modified |= self.tryOptimizePushPop()
 			modified |= self.tryOptimizePushDiscard()
-			#modified |= self.tryOptimizeMov()
 			#modified |= self.tryOptimizeCondSwap()
-			#modified |= self.tryOptimizeCondJump()
-			#modified |= self.tryOptimizeLjmp()
+			modified |= self.tryOptimizeSetPC()
 			modified |= self.tryOptimizeTailCall()
 
 			self.pos += 1
@@ -289,81 +287,6 @@ class AsmOptimizer(object):
 		instr.a = PC()
 		return True
 
-	def tryOptimizeMov(self):
-		'Assumption: R0-R7 = 0x00-0x07'
-
-		if self.get(0).type == 'MOV direct,direct':
-			# replace with shorter version
-			target = self.get(0).args[0]
-			source = self.get(0).args[1]
-
-			if target < 8:
-				self.remove(0, 0)
-				self.insert(0, Asm('MOV Rn,direct', target, source))
-				return True
-			elif source < 8:
-				self.remove(0, 0)
-				self.insert(0, Asm('MOV direct,Rn', target, source))
-				return True
-
-		if self.get(0).type == 'MOV direct,Rn' and self.get(0).args[0] == 'ACC':
-			# replace with shorter version
-			source = self.get(0).args[1]
-
-			self.remove(0, 0)
-			self.insert(0, Asm('MOV A,Rn', source))
-			return True
-
-		if not self.canGet(1):
-			return False
-
-		if (self.get(0).type == 'MOV Rn,direct' and self.get(1).type == 'MOV Rn,direct') or \
-			(self.get(0).type == 'MOV direct,direct' and self.get(1).type == 'MOV direct,direct'):
-			# remove useless (x ->) y -> x
-			if str(self.get(0).args[0]) == str(self.get(1).args[1]) and str(self.get(1).args[0]) == str(self.get(0).args[1]):
-				self.remove(1,1)
-				return True
-
-		if self.get(0).type == 'MOV Rn,#data' and str(self.get(0).args[0]) == '0':
-			# constants
-			# assumption: R0 values are only used once
-
-			if self.get(1).type == 'MOV A,Rn' and str(self.get(1).args[0]) == '0':
-				self.get(1).type = 'MOV A,#data'
-				self.get(1).args = (self.get(0).args[1],)
-				self.remove(0, 0)
-				return True
-
-			if self.get(1).type == 'MOV direct,Rn' and str(self.get(1).args[1]) == '0':
-				self.get(1).type = 'MOV direct,#data'
-				self.get(1).args = (self.get(1).args[0], self.get(0).args[1])
-				self.remove(0, 0)
-				return True
-
-
-			if self.get(1).type == 'PUSH direct' and self.canGet(2):
-				if self.get(2).type == 'MOV Rn,direct':
-					self.get(2).type = 'MOV Rn,#data'
-					self.get(2).args = (self.get(2).args[0], self.get(0).args[1])
-					self.remove(0, 0)
-					return True
-
-
-		if self.get(0).type == 'MOV Rn,#data' and self.get(1).type == 'MOV A,Rn' and self.get(2).type == 'POP direct':
-			return False
-			reg0 = self.get(0).args[0]
-			reg1 = self.get(1).args[0]
-			addr = self.get(2).args[0]
-
-			if reg0 == reg1 == addr:
-				data = self.get(0).args[1]
-				
-				self.remove(0, 1)
-				self.insert(0, Asm('MOV A,#data', data))
-				return True
-
-		return False
-
 	def tryOptimizeCondSwap(self):
 		if not self.canGet(2):
 			return False
@@ -396,105 +319,21 @@ class AsmOptimizer(object):
 
 		return True
 
-	def tryOptimizeCondJump(self):
+	def tryOptimizeSetPC(self):
+		if not self.canGet(1):
+			return False
+
 		source = self.get(0)
-		
-		if source.type not in self.condJumps:
+		target = self.get(1)
+
+		if not (target.opcode == Label and source.opcode == SET and isinstance(source.a, PC)):
+			return False
+		if not (isinstance(source.b, LabelReference) and source.b.name == target.a.name):
 			return False
 
-		sourceAddress = source.address + AsmSize[source.type]
-		target = self.labels[source.args[-1]]
-		
-		if target.type != 'label':
-			raise Exception("Internal error: expected label as target instruction but found '%s' instead" % target.type)
+		self.remove(0, 0)
 
-		jumpTarget = self.program[self.program.index(target) + 1]
-
-		if jumpTarget.type not in ('AJMP rel', 'SJMP rel', 'LJMP rel'):
-			return False
-
-		finalTarget = self.labels[jumpTarget.args[0]]
-
-		finalTargetAddress = finalTarget.address - AsmSize[jumpTarget.type]
-
-		if self.isAddrInSJMPRange(sourceAddress, finalTargetAddress):
-			source.args[-1] = jumpTarget.args[0]
-			return True
-		
-		return False
-
-	def tryOptimizeLjmp(self):
-		source = self.get(0)
-
-		if source.type not in ('ACALL addr11', 'AJMP addr11', 'LCALL addr16', 'LJMP addr16', 'SJMP rel'):
-			return False
-
-		targetLabel = self.labels[source.args[0]]
-
-		if self.canGet(1):
-			if source.type in ('AJMP addr11', 'LJMP addr16', 'SJMP rel'):
-				# is the jump target the next instruction?
-				if targetLabel is self.get(1):
-					# remove the no-op jump
-					self.remove(0, 0)
-					return True
-
-				targetInstruction = self.program[self.program.index(targetLabel) + 1]
-
-				if source != targetInstruction:
-
-					# is the jump target a jump instruction?
-					if targetInstruction.type in ('AJMP addr11', 'LJMP addr16', 'SJMP rel'):
-						# skip the intermediate jump
-						source.type = 'LJMP addr16'
-						source.args[0] = targetInstruction.args[0]
-						return True
-
-					# is the jump target a return instruction?
-					if targetInstruction.type in ('RET', 'RETI'):
-						# skip the intermediate jump
-						source.type = targetInstruction.type
-						source.args = ()
-						return True
-
-		oldType = source.type
-
-		# try to use a shorter instruction if the target is within range
-		# or when the target is out of range, revert to the longer instruction
-		if source.type in ('LJMP addr16', 'SJMP rel', 'AJMP addr11'):
-			if self.isInSJMPRange(source, targetLabel):
-				source.type = 'SJMP rel'
-			elif self.isInAJMPRange(source, targetLabel):
-				source.type = 'AJMP addr11'
-			else:
-				source.type = 'LJMP addr16'
-
-		elif source.type in ('LCALL addr16', 'ACALL addr11'):
-			if self.isInAJMPRange(source, targetLabel):
-				source.type = 'ACALL addr11'
-			else:
-				source.type = 'LCALL addr16'
-
-		return source.type != oldType
-
-	def isInSJMPRange(self, sourceInstruction, targetInstruction):
-		'SJMP range: target address within -128..127 bytes of source address + 2'
-
-		source = sourceInstruction.address + 2
-		target = targetInstruction.address
-
-		return self.isAddrInSJMPRange(source, target)
-
-	def isAddrInSJMPRange(self, sourceAddress, targetAddress):
-		return -128 <= targetAddress - sourceAddress <= 127
-
-	def isInAJMPRange(self, sourceInstruction, targetInstruction):
-		'AJMP range: target address within the same 2KB block of source address + 2'
-
-		source = sourceInstruction.address + 2
-		target = targetInstruction.address
-
-		return target >> 11 == source >> 11
+		return True
 
 	# -----
 
