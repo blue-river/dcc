@@ -36,6 +36,7 @@ class AsmOptimizer(object):
 			#modified |= self.tryOptimizeCondSwap()
 			modified |= self.tryOptimizeSetPC()
 			modified |= self.tryOptimizeTailCall()
+			modified |= self.tryOptimizeNoop()
 
 			self.pos += 1
 
@@ -334,6 +335,19 @@ class AsmOptimizer(object):
 		self.remove(0, 0)
 
 		return True
+
+	def tryOptimizeNoop(self):
+		target = self.get(0)
+
+		if (target.opcode in (ADD, SUB, SHL, SHR, BOR, XOR) and isinstance(target.b, Literal) and target.b.value == 0):
+			self.remove(0, 0)
+			return True
+
+		if (target.opcode in (MUL, DIV) and isinstance(target.b, Literal) and target.b.value == 1):
+			self.remove(0, 0)
+			return True
+
+		return False
 
 	# -----
 
