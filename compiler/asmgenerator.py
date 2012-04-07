@@ -95,7 +95,7 @@ class RegisterPointer(SimpleValue):
 class RegisterPointerOffset(object):
 	def __init__(self, register, offset):
 		self.register = register
-		self.offset = offset
+		self.offset = offset % 0x10000
 
 	def size(self):
 		return 1
@@ -143,7 +143,7 @@ class DataField(Pointer):
 
 class Literal(object):
 	def __init__(self, value):
-		self.value = value
+		self.value = value % 0x10000
 
 	def size(self):
 		if self.value < 0x20:
