@@ -36,7 +36,7 @@ class SetBit(CodeItemBase):
 			# identifier is a data field
 			target = DataField(containingFunction.identifiers[self.target])
 		else:
-			target = containingFunction.getRegisterForVariable(self.target)
+			target = containingFunction.getLocationForVariable(self.target)
 
 		if self.value.constantExpression:
 			if self.value.value:
@@ -91,7 +91,7 @@ class Assignment(CodeItemBase):
 			yield Instruction(SET, DataField(dataField), Pop())
 		else:
 			# identifier is a local variable
-			yield Instruction(SET, containingFunction.getRegisterForVariable(self.target), Pop())
+			yield Instruction(SET, containingFunction.getLocationForVariable(self.target), Pop())
 
 	def stackUsage(self, functions):
 		return self.value.stackUsage(functions)
@@ -134,10 +134,10 @@ class Decrement(CodeItemBase):
 			# identifier is a data field
 			location = containingFunction.identifiers[self.target].location
 
-			yield Instruction(SUB, Pointer(self.target), 1)
+			yield Instruction(SUB, Pointer(self.target), Literal(1))
 		else:
 			# identifier is a local variable
-			yield Instruction(SUB, containingFunction.getRegisterForVariable(self.target), 1)
+			yield Instruction(SUB, containingFunction.getLocationForVariable(self.target), Literal(1))
 
 	def stackUsage(self, functions):
 		return 0
@@ -181,10 +181,10 @@ class Increment(CodeItemBase):
 			# identifier is a data field
 			location = containingFunction.identifiers[self.target].location
 
-			yield Instruction(ADD, Pointer(self.target), 1)
+			yield Instruction(ADD, Pointer(self.target), Literal(1))
 		else:
 			# identifier is a local variable
-			yield Instruction(ADD, containingFunction.getRegisterForVariable(self.target), 1)
+			yield Instruction(ADD, containingFunction.getLocationForVariable(self.target), Literal(1))
 
 	def stackUsage(self, functions):
 		return 0
@@ -216,7 +216,7 @@ class ReturnValue(CodeItemBase):
 			yield instruction
 
 		yield Instruction(Comment, 'return')
-		yield Instruction(SET, O(), Pop())
+		yield Instruction(SET, A, Pop())
 		yield Instruction(SET, PC(), LabelReference('ret_' + containingFunction.name))
 
 	def stackUsage(self, functions):

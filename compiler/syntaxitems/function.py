@@ -14,9 +14,6 @@ class FunctionBase(CodeItemBase):
 	def __init__(self, filename, line, *args):
 		CodeItemBase.__init__(self, filename, line, *args)
 
-		if len(self.args) + len(self.locals) > 6:
-			self.error("Function '%s' has %d arguments and local variables. At most 6 arguments and local variables are allowed" % (name, len(args) + len(locals)))
-
 		argdict = {}
 		for arg in self.args:
 			if '.' in arg.name:
@@ -47,12 +44,12 @@ class FunctionBase(CodeItemBase):
 
 		self.localdict = localdict
 
-	def getRegisterForVariable(self, name):
+	def getLocationForVariable(self, name):
 		if name in self.argdict:
-			return Registers[self.args.index(self.argdict[name]) + 2]
+			return RegisterPointerOffset(C, self.args.index(self.argdict[name]) + 1)
 
 		if name in self.localdict:
-			return Registers[self.locals.index(self.localdict[name]) + len(self.args) + 2]
+			return RegisterPointerOffset(C, -self.locals.index(self.localdict[name]))
 		
 		raise Exception("Internal error: unable to locate variable '%s' in function '%s'" % (name, self.name))
 
@@ -76,25 +73,38 @@ class FunctionBase(CodeItemBase):
 		yield Instruction(Comment, 'start function')
 
 		if self.saveVariables:
-			for i in xrange(len(self.args) + len(self.locals)):
-				yield Instruction(SET, Push(), Registers[i + 2])
+			yield Instruction(SET, Push(), C)
 
-		if (self.args):
-			yield Instruction(Comment, 'read arguments')
+		yield Instruction(SET, C, SP())
 
-		for i in xrange(len(self.args)):
-			yield Instruction(SET, Registers[i + 2], Pointer(i + ArgumentOffset))
+		#if self.saveVariables:
+		#	for i in xrange(len(self.args) + len(self.locals)):
+		#		yield Instruction(SET, Push(), Registers[i + 2])
+
+		#if (self.args):
+		#	yield Instruction(Comment, 'read arguments')
+
+		#for i in xrange(len(self.args)):
+		#	yield Instruction(SET, Registers[i + 2], Pointer(i + ArgumentOffset))
+
+		yield Instruction(SUB, SP(), Literal(len(self.locals)))
 
 		for instruction in self.statementblock.transformToAsm(self, None):
 			yield instruction
+
+		# Register A now contains return value
 			
 		yield Instruction(Label, LabelReference('ret_' + self.name))
-
 		yield Instruction(Comment, 'end function')
 
+		yield Instruction(ADD, SP(), Literal(len(self.locals)))
+
 		if self.saveVariables:
-			for i in xrange(len(self.args) + len(self.locals) - 1, -1, -1):
-				yield Instruction(SET, Registers[i + 2], Pop())
+			yield Instruction(SET, C, Pop())
+
+		#if self.saveVariables:
+		#	for i in xrange(len(self.args) + len(self.locals) - 1, -1, -1):
+		#		yield Instruction(SET, Registers[i + 2], Pop())
 
 		if self.datatype != 'void':
 			if not self.statementblock.statements or not isinstance(self.statementblock.statements[-1], ReturnValue):

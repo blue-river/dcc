@@ -101,26 +101,20 @@ class Call(ExpressionBase):
 			arg.verifyIdentifiers(datafields, functions, containingFunction)
 			
 	def transformToAsm(self, containingFunction, containingLoop):
-		for arg in self.arglist:
-			for asm in arg.transformToAsm(containingFunction, containingLoop):
-				yield asm
-
-
 		if (self.arglist):
 			yield Instruction(Comment, 'write arguments')
 
-		# TODO
-		address = ArgumentOffset + len(self.arglist)
-
 		for arg in self.arglist:
-			address -= 1
-			yield Instruction(SET, Pointer(address), Pop())
+			for asm in arg.transformToAsm(containingFunction, containingLoop):
+				yield asm
 
 		yield Instruction(Comment, 'call')
 
 		yield Instruction(JSR, LabelReference('func_' + self.function))
 		# TODO: don't push for void functions.
-		yield Instruction(SET, Push(), O())
+		yield Instruction(SET, Push(), A)
+
+		yield Instruction(ADD, SP(), Literal(len(self.arglist)))
 
 	def stackUsage(self, functions):
 		maxStack = 0
@@ -176,7 +170,7 @@ class Identifier(ExpressionBase):
 			yield Instruction(SET, Push(), DataField(field))
 		else:
 			# identifier is a local variable
-			yield Instruction(SET, Push(), containingFunction.getRegisterForVariable(self.name))
+			yield Instruction(SET, Push(), containingFunction.getLocationForVariable(self.name))
 
 	def stackUsage(self, functions):
 		return 1
