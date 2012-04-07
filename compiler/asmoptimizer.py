@@ -33,6 +33,7 @@ class AsmOptimizer(object):
 			#modified |= self.tryOptimizePushPopLocation()
 			modified |= self.tryOptimizePushPop()
 			modified |= self.tryOptimizePushDiscard()
+			modified |= self.tryOptimizeDiscardPush()
 			#modified |= self.tryOptimizeCondSwap()
 			modified |= self.tryOptimizeSetPC()
 			modified |= self.tryOptimizeTailCall()
@@ -165,29 +166,23 @@ class AsmOptimizer(object):
 		self.remove(0, 1)
 		return True
 
-	pushBarriers = (
-		'ACALL addr11',
-		'CJNE A,direct,rel',
-		'LCALL addr16',
-		'POP direct',
-		'PUSH direct',
-		'comment',
-		'label',
-	)
-	pushWindows = (
-		'DEC direct',
-		'MOV A,#data',
-		'MOV A,Rn',
-		'MOV DPTR,#data16',
-		'MOV Rn,#data',
-		'MOV Rn,direct',
-		'MOV direct,#data',
-		'MOV direct,Rn',
-		'MOV direct,direct',
-		'MOVX @DPTR,A',
-		'MOVX A,@DPTR',
-		'ORL A,Rn',
-	)
+	def tryOptimizeDiscardPush(self):
+		if not self.canGet(1):
+			return False
+
+		discard = self.get(0)
+
+		if not (discard.opcode == ADD and isinstance(discard.a, SP) and isinstance(discard.b, Literal) and discard.b.value == 1):
+			return False
+
+		push = self.get(1)
+
+		if not (push.opcode == SET and isinstance(push.a, Push)):
+			return False
+
+		self.remove(0, 0)
+		push.a = Peek()
+		return True
 
 	def tryOptimizePushPopLocation(self):
 		# TODO also move pop up
