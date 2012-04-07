@@ -1,4 +1,4 @@
-**DCC v0.1**
+**DCC v0.9**
 DCC is a compiler for the DC language, targeting the [DCPU-16](http://0x10c.com/doc/dcpu-16.txt)
 
 

@@ -13,7 +13,7 @@ def main():
 	usage = 'usage: %prog [options]'
 	description = 'Compiles main.dc and its dependencies to assembly.'
 	epilog = 'Report bugs and feature requests to zr40.nl@gmail.com'
-	version = '%prog 0.3 dev'
+	version = '%prog 0.9 dev'
 	parser = OptionParser(usage=usage, description=description, epilog=epilog, version=version)
 	parser.add_option('-m', metavar='PATH', action='append', dest='moduleSearchPath', help='look for referenced modules in PATH', default=[])
 	parser.add_option('--no-opt', action='store_false', dest='optimize', help='do not perform optimizations', default=True)
