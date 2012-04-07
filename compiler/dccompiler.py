@@ -56,7 +56,7 @@ class DCCompiler(object):
 		if options.verboseprogress:
 			print 'Generating assembly...'
 
-		program, memoryEndAddress = asmgenerator.transform(datafields, functions)
+		program = asmgenerator.transform(datafields, functions)
 
 		if options.optimize:
 			if options.verboseprogress:
@@ -64,16 +64,16 @@ class DCCompiler(object):
 
 			self.optimizeAsm(options, program)
 
-		if not options.verboseinfo or not options.verboseprogress:
+		if not options.verboseinfo or not options.verboseprogress or not options.optimize:
 			self.printAsmStatistics(program)
 
-		self.checkCodeSize(program)
+		instructions, codeWords, memoryWords = asmgenerator.count(program)
 
-		print 'Stack space available: %d words' % (0xffff - memoryEndAddress)
+		print 'Stack space available: %d words' % (0x10000 - codeWords - memoryWords)
 
 		if options.verboseinfo:
-			if memoryEndAddress >= 0x4000:
-				print 'Memory used: 0x4000-0x%X' % memoryEndAddress
+			if memoryWords >= 0:
+				print 'Memory used: 0x%X-0x%X' % (codeWords, codeWords + memoryWords - 1)
 
 		asm = asmgenerator.programToAsm(program, options)
 
@@ -104,13 +104,8 @@ class DCCompiler(object):
 		return DCParser(options).parse(filename, modulename, input)
 
 	def printAsmStatistics(self, program):
-		instructions, codeBytes, realBytes = asmgenerator.count(program)
-		print "Program size: %s words (%s code words, %s instructions)" % (realBytes, codeBytes, instructions)
-
-	def checkCodeSize(self, program):
-		ignore, ignore, realBytes = asmgenerator.count(program)
-		if realBytes > 0x4000:
-			raise Exception('Internal error: Code size exceeds 0x4000 words, would overlap with external data fields')
+		instructions, codeWords, memoryWords = asmgenerator.count(program)
+		print "Program size: %s words (%s code words, %s instructions)" % (memoryWords + codeWords, codeWords, instructions)
 
 	def checkIdentifierUsage(self, datafields, functions):
 		for datafield in datafields.values():

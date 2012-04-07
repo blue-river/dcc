@@ -79,7 +79,6 @@ J = Register('J')
 Registers = A, B, C, X, Y, Z, I, J
 TempStorage = A
 RepeatCounter = B
-ArgumentOffset = 0x4000 - 6
 
 class SimpleValue(object):
 	def size(self):
@@ -137,9 +136,16 @@ class Pointer(object):
 	def asm(self):
 		return '[%s]' % self.location
 
-class DataField(Pointer):
+class DataField(object):
 	def __init__(self, location):
-		Pointer.__init__(self, dataFieldAddress(location))
+		dataFieldAddress(location)
+		self.location = location
+
+	def size(self):
+		return 1
+	
+	def asm(self):
+		return '[%s]' % (dataFieldAddress(self.location) + memoryOffset)
 
 class Literal(object):
 	def __init__(self, value):
@@ -165,17 +171,13 @@ class LabelReference(object):
 
 
 def count(program):
+	global memoryOffset
+
 	instructions = 0
-	codeBytes = 0
-	realBytes = 0
+	codeWords = 0
 	address = 0
 
 	for instruction in program:
-		#if instruction.type == 'origin':
-		#	address = instruction.args[0]
-		#	if realBytes < address:
-		#		realBytes = address
-
 		size = instruction.size()
 
 		instruction.address = address
@@ -184,11 +186,11 @@ def count(program):
 			continue
 
 		instructions += 1
-		codeBytes += size
-		realBytes += size
+		codeWords += size
 		address += size
 
-	return instructions, codeBytes, realBytes
+	memoryOffset = codeWords
+	return instructions, codeWords, memoryAddress
 
 thislabel = -1
 
@@ -200,7 +202,7 @@ def nextlabel(name = 'unnamed'):
 	return LabelReference('%s_label_%X' % (name, thislabel))
 
 memoryAddresses = {}
-memoryAddress = 0x4000
+memoryAddress = 0
 
 def dataFieldAddress(dataField):
 	global memoryAddress
@@ -209,8 +211,8 @@ def dataFieldAddress(dataField):
 		raise Exception('Internal error: cannot assign address to constant')
 
 	if dataField.name not in memoryAddresses:
-		if memoryAddress == 0x5000:
-			# Use 0x5000 as an arbitrary limit. This allows for 4096 bytes of space.
+		if memoryAddress == 0x1000:
+			# Use 0x1000 as an arbitrary limit. This allows for 4096 words of space.
 			# Allowing more is not useful right now; more code memory would be required.
 			dataField.error('Ran out of external address space for data fields!')
 
@@ -221,17 +223,6 @@ def dataFieldAddress(dataField):
 
 def transform(datafields, functions):
 	program = []
-
-		#program.append(Asm('EQU', datafield.name, datafield.address))
-
-	# stack pointer starts at the address of the last data field.
-	# the stack data actually begins at the next address.
-
-	#program.append(Asm('EQU', 'stack', stackStartAddress))
-
-	#program += bootCode
-
-	#program += initCode
 
 	# TODO: do we need to null-initialize fields?
 
@@ -250,19 +241,16 @@ def transform(datafields, functions):
 		index = len(program)
 		program += function.transformToAsm()
 
-	# 0 = maxStackSize
-	return program, memoryAddress - 1
+	return program
 
 def programToAsm(program, options):
+	global memoryOffset
 	lines = []
 	codeAddressAliases = []
 
-	comment = ''
+	ignore, codeWords, ignore = count(program)
 
 	for instruction in program:
-		if options.debugCodeGenerator:
-			comment = ' ; %X' % instruction.address
-
 		lines.append(instruction.asm())
 
 	lines.append('\n')
@@ -270,24 +258,6 @@ def programToAsm(program, options):
 	return '\n'.join(lines)
 
 # data
-
-#bootCode = [
-#	Asm('origin', 0x00).addMetadataAfter('code address alias', 'boot code'),
-#	Asm('AJMP addr11', 'init'),
-#]
-
-#initCode = [ 
-#	Asm('origin', 0x80).addMetadataAfter('code address alias', 'initialisation'),
-#	Asm('label', 'init'),
-# Asm('MOV direct,#data', 'SP', 'stack'),
-#]
-
-#startCode = [
-#	Asm('label', 'startcode'),
-#	Asm('LCALL addr16', 'func_main__dot__main'),
-#	Asm('label', 'mainexited').addMetadataAfter('code address alias', 'main exited'),
-#	Asm('SJMP rel', 'mainexited'),
-#]
 
 startCode = [
 	Instruction(Label, LabelReference('startcode')),
