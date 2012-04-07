@@ -48,11 +48,6 @@ class DCCompiler(object):
 
 			self.optimizeSyntaxTree(datafields, functions)
 
-		print 'Max stack usage: %d words' % (functions['main.main'].stackUsage(functions) + 2)
-
-		if options.optimize:
-			print 'Note: stack usage could be less, because optimization is enabled'
-
 		if options.verboseprogress:
 			print 'Generating assembly...'
 
@@ -69,11 +64,13 @@ class DCCompiler(object):
 
 		instructions, codeWords, memoryWords = asmgenerator.count(program)
 
-		print 'Stack space available: %d words' % (0x10000 - codeWords - memoryWords)
+		print 'Free space available: %d words' % (0x10000 - codeWords - memoryWords)
 
 		if options.verboseinfo:
-			if memoryWords >= 0:
-				print 'Memory used: 0x%X-0x%X' % (codeWords, codeWords + memoryWords - 1)
+			if memoryWords > 0:
+				print 'Memory used by data fields: 0x%X-0x%X' % (codeWords, codeWords + memoryWords - 1)
+			else:
+				print 'No memory used by data fields'
 
 		asm = asmgenerator.programToAsm(program, options)
 

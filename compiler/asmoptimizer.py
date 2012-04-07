@@ -34,6 +34,7 @@ class AsmOptimizer(object):
 			modified |= self.tryOptimizePushPop()
 			modified |= self.tryOptimizePushDiscard()
 			modified |= self.tryOptimizeDiscardPush()
+			modified |= self.tryOptimizePeekPop()
 			#modified |= self.tryOptimizeCondSwap()
 			modified |= self.tryOptimizeSetPC()
 			modified |= self.tryOptimizeTailCall()
@@ -184,69 +185,25 @@ class AsmOptimizer(object):
 		push.a = Peek()
 		return True
 
-	def tryOptimizePushPopLocation(self):
-		# TODO also move pop up
-
-		instruction = self.get(0)
-
-		if not instruction.type in ('PUSH direct', 'POP direct'):
+	def tryOptimizePeekPop(self):
+		if not self.canGet(1):
 			return False
 
-		push = instruction.type == 'PUSH direct'
+		peek = self.get(0)
+		pop = self.get(1)
 
-		if push:
-			otherInstruction = self.get(1)
-		else:
-			otherInstruction = self.get(-1)
-
-		if otherInstruction.type in self.pushBarriers:
+		if not (peek.opcode in (SET, ADD, SUB, MUL, DIV, MOD, SHL, SHR, AND, BOR, XOR) and isinstance(peek.a, Peek)):
 			return False
 
-		if otherInstruction.type in self.pushWindows:
-			mem = str(instruction.args[0])
+		if not (pop.opcode == SET and isinstance(pop.b, Pop)) or isinstance(pop.a, (Peek, Push)):
+			return False
 
-			if otherInstruction.type == 'MOV A,#data':
-				barrier = ['A']
+		if not (peek.b.asm() == pop.a.asm()):
+			return False
 
-			elif otherInstruction.type in ('MOV Rn,#data', 'DEC direct', 'MOV direct,#data'):
-				barrier = [str(otherInstruction.args[0])]
-
-			elif otherInstruction.type in ('MOV A,Rn', 'ORL A,Rn'):
-				barrier = ['A', str(otherInstruction.args[0])]
-
-			elif otherInstruction.type in ('MOV direct,Rn', 'MOV Rn,direct', 'MOV direct,direct'):
-				barrier = [str(otherInstruction.args[0]), str(otherInstruction.args[1])]
-
-			elif otherInstruction.type in ('MOVX A,@DPTR', 'MOVX @DPTR,A'):
-				barrier = ['A', 'DPL', 'DPH']
-
-			elif otherInstruction.type == 'MOV DPTR,#data16':
-				barrier = []
-
-			else:
-				raise Exception("Internal error: unreachable for '%s'" % otherInstruction.type)
-
-			if 'A' in barrier and 'ACC' not in barrier:
-				barrier.append('ACC')
-			elif 'ACC' in barrier and 'A' not in barrier:
-				barrier.append('A')
-
-			if mem in barrier or 'SP' in barrier:
-				return False
-
-			if push:
-				self.remove(0,0)
-				self.insert(1, instruction)
-			else:
-				self.remove(0,0)
-				self.insert(-1, instruction)
-			return True
-
-		if self.options.debugOptimizer:
-			print 'Possible push barrier ' + otherInstruction.type
-
-		return False
-		
+		pop.opcode = peek.opcode
+		self.remove(0, 0)
+		return True
 
 	def tryOptimizePushPop(self):
 		if not self.canGet(1):
