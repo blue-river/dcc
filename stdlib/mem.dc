@@ -108,7 +108,7 @@ void _initTree()
 	}
 }
 
-// frees memeroy allocated on address, if an invalid address is given its behavior is undefined
+// frees memory allocated on address, if an invalid address is given its behavior is undefined
 // if address is 0 nothing happens
 void free(int address)
 {
