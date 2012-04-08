@@ -1,0 +1,132 @@
+const int PAGE_SIZE = 32;
+const int STACK_SIZE = 1024;
+
+int _pageTree = 0;
+
+// allocates size words of memory, returns address of first word
+// or 0 if not enough free space could be found or size is 0
+int malloc(int size)
+{
+	int startNode;
+	int startPage;
+	int currNode;
+	int lastPage;
+	int lastNode;
+	int currPage;
+	int pages;
+	int len;
+	int i;
+
+	if (_pageTree == 0)
+	{
+		_initTree();
+	}
+
+	pages = size / PAGE_SIZE + 1;
+
+	startNode = rbtree.minimum(_pageTree);
+
+	currNode = startNode;
+	lastPage = 0;
+
+	while (currNode != 0)
+	{
+		currPage = rbtree.value(currNode);
+
+		if (currPage > lastPage + PAGE_SIZE)
+		{
+			len = 0;
+			startNode = currNode;
+		}
+		len++;
+
+		if (pages == len)
+		{
+			currNode = startNode;
+			startPage = rbtree.value(startNode);
+			*startPage = size;
+			i = 0;
+			while (i < pages)
+			{
+				lastNode = currNode;
+				currNode = rbtree.next(currNode);
+				rbtree.delete(_pageTree, currNode);
+				i++;
+			}
+			return startPage + 1;
+		}
+
+		currNode = rbtree.next(currNode);
+		lastPage = currPage;
+	}
+	return 0;
+}
+
+// Same as malloc, but initializes allocated memory with zeros
+int calloc(int size)
+{
+	int i;
+	int address;
+
+	address = malloc(size);
+	i = 0;
+
+	while (i != size)
+	{
+		*(address + i) = 0;
+		i++;
+	}
+
+	return address;
+}
+
+void _initTree()
+{
+	int page;
+	int stack_end;
+	int treeSize;
+	int naiveTreeSize;
+	int	pages;
+
+	page = compilerservices.freememstart;
+	stack_end = 0xFFFF - STACK_SIZE;
+	pages = (0xFFFF - page - stack_end) / PAGE_SIZE + 1;
+
+	naiveTreeSize = rbtree.sizeNeeded(pages) / PAGE_SIZE;
+	treeSize = rbtree.sizeNeeded(pages - naiveTreeSize) / PAGE_SIZE;
+	pages = pages - treeSize;
+
+	rbtree.init(page);
+	_pageTree = page;
+
+	page += treeSize;
+
+	while (page < stack_end)
+	{
+		rbtree.insert(_pageTree, page);
+		page += PAGE_SIZE;
+	}
+}
+
+// frees memeroy allocated on address, if an invalid address is given its behavior is undefined
+// if address is 0 nothing happens
+void free(int address)
+{
+	int firstPage;
+	int numPages;
+	int i;
+
+	if (address==0)
+	{
+		return;
+	}
+
+	firstPage = address-1;
+	numPages = *firstPage / PAGE_SIZE + 1;
+
+	while (i < numPages)
+	{
+		rbtree.insert(_pageTree, firstPage + i);
+		i++;
+	}
+}
