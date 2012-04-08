@@ -1,0 +1,312 @@
+const int _value = 0;
+const int _color = 1;
+const int _left = 2;
+const int _right = 3;
+const int _parent = 4;
+const int nodeSize = 5;
+
+const int _black = 0;
+const int _red = 1;
+const int metadataSize = 2;
+
+const int _last_pointer = 0;
+const int _root = 1;
+
+void init(int tree) {
+	*(tree + _root) = 0;
+	*(tree + _last_pointer) = tree + metadataSize - nodeSize;
+}
+
+int sizeNeeded(int n) {
+	return metadataSize; // TODO
+}
+
+int value(int node) {
+	return *(node + _value);
+}
+
+// callers: node is the value to be inserted
+void insert(int tree, int node) {
+	int y;
+	int x;
+	int left;
+	int right;
+
+	// TODO fixme +=
+	*(tree + _last_pointer) = *(tree + _last_pointer) + nodeSize;
+
+	x = *(tree + _last_pointer);
+	*(x + _value) = node;
+	node = x;
+
+	// rb-insert
+
+	y = 0;
+	x = *(tree + _root);
+
+	while (x != 0) {
+		y = x;
+		if (*(node + _value) < *(x + _value)) {
+			x = *(x + _left);
+		} else {
+			x = *(x + _right);
+		}
+	}
+
+	*(node + _parent) = y;
+
+	if (y == 0) {
+		*(tree + _root) = node;
+	} else if (*(node + _value) < *(y + _value)) {
+		*(y + _left) = node;
+	} else {
+		*(y + _right) = node;
+	}
+
+	*(node + _left) = 0;
+	*(node + _right) = 0;
+	*(node + _color) = _red;
+
+
+	// rb-insert-fixup
+	
+	while (*(*(node + _parent) + _color) == _red) {
+		if (*(node + _parent) == *(*(*(node + _parent) + _parent) + _left)) {
+			left = _left;
+			right = _right;
+		} else {
+			left = _right;
+			right = _left;
+		}
+
+		// _left and _right must not be used from here on
+
+		y = *(*(*(node + _parent) + _parent) + right);
+		if (*(y + _color) == _red) {
+			*(*(node + _parent) + _color) = _black;
+			*(y + _color) = _black;
+			*(*(*(node + _parent) + _parent) + _color) = _red;
+			node = *(*(node + _parent) + _parent);
+		} else {
+			if (node == *(*(node + _parent) + right)) {
+				node = *(node + _parent);
+				_rotate(node, left, right);
+			}
+
+			*(*(node + _parent) + _color) = _black;
+			*(*(*(node + _parent) + _parent) + _color) = _red;
+			_rotate(*(*(node + _parent) + _parent), right, left);
+		}
+	}
+}
+
+void delete(int tree, int node) {
+	int y;
+	int x;
+	int yOriginalColor;
+	int w;
+	int left;
+	int right;
+
+	// TODO swap node with last in array
+	y = *(tree + _last_pointer);
+
+	// no need to save the deleted node's value
+	*(node + _value) = *(y + _value);
+
+	x = *(node + _color);
+	*(node + _color) = *(y + _color);
+	*(y + _color) = x;
+
+	x = *(node + _left);
+	*(node + _left) = *(y + _left);
+	*(y + _left) = x;
+
+	x = *(node + _right);
+	*(node + _right) = *(y + _right);
+	*(y + _right) = x;
+
+	x = *(node + _parent);
+	*(node + _parent) = *(y + _parent);
+	*(y + _parent) = x;
+
+	x = *(y + _parent);
+	if (x != 0) {
+		if (*(x + _left) == node) {
+			*(x + _left) = y;
+		} else {
+			*(x + _right) = y;
+		}
+	}
+
+	x = *(y + _left);
+	if (x != 0) {
+		*(x + _parent) = y;
+	}
+
+	x = *(y + _right);
+	if (x != 0) {
+		*(x + _parent) = y;
+	}
+
+	// TODO fixme -=
+	*(tree + _last_pointer) = *(tree + _last_pointer) - nodeSize;
+
+	// rb-delete
+
+	// already true
+	// y = node;
+
+	yOriginalColor = *(y + _color);
+
+	if (*(node + _left) == 0) {
+		x = *(node + _right);
+		_transplant(tree, node, x);
+	} else if (*(node + _right) == 0) {
+		x = *(node + _left);
+		_transplant(tree, node, x);
+	} else {
+		y = _minimum(*(node + _right));
+		yOriginalColor = *(y + _color);
+		x = *(y + _right);
+
+		if (*(y + _parent) == node) {
+			*(x + _parent) = y;
+		} else {
+			_transplant(tree, y, *(y + _right));
+			*(y + _right) = *(node + _right);
+			*(*(y + _right) + _parent) = y;
+		}
+
+		_transplant(tree, node, y);
+		*(y + _left) = *(node + _left);
+		*(*(y + _left) + _parent) = y;
+		*(y + _color) = *(node + _color);
+	}
+
+	if (yOriginalColor == _black) {
+		// rb-delete-fixup
+
+		while (x != *(tree + _root) && *(x + _color) == _black) {
+			if (x == *(*(x + _parent) + _left)) {
+				left = _left;
+				right = _right;
+			} else {
+				left = _right;
+				right = _left;
+			}
+
+			// _left and _right must not be used from here on
+
+			w = *(*(x + _parent) + right);
+
+			if (*(w + _color) == _red) {
+				*(w + _color) = _black;
+				*(*(x + _parent) + _color) = _red;
+
+				_rotate(*(x + _parent), left, right);
+				w = *(*(x + _parent) + right);
+			}
+
+			if (*(*(w + left) + _color) == _black && *(*(w + right) + _color) == _black) {
+				*(w + _color) = _red;
+				x = *(x + _parent);
+			} else {
+				if (*(*(w + right) + _color) == _black) {
+					*(*(w + left) + _color) = _black;
+					*(w + _color) = _red;
+					_rotate(w, right, left);
+					w = *(*(x + _parent) + right);
+				}
+
+				*(w + _color) = *(*(x + _parent) + _color);
+				*(*(x + _parent) + _color) = _black;
+				*(*(w + right) + _color) = _black;
+				_rotate(*(x + _parent), left, right);
+				x = (tree + _root);
+			}
+		}
+
+		*(x + _color) = _black;
+	}
+}
+
+void _transplant(int tree, int u, int v) {
+	if (*(u + _parent) == 0) {
+		*(tree + _root) = v;
+	} else if (u == *(*(u + _parent) + _left)) {
+		*(*(u + _parent) + _left) = v;
+	} else {
+		*(*(u + _parent) + _right) = v;
+	}
+
+	*(v + _parent) = *(u + _parent);
+}
+
+int minimum(int tree) {
+	if (*(tree + _root) == 0) {
+		return 0;
+	}
+
+	return _minimum(*(tree + _root));
+}
+
+int _minimum(int node) {
+	while (*(node + _left) != 0) {
+		node = *(node + _left);
+	}
+
+	return node;
+}
+
+int next(int node) {
+	int y;
+	if (*(node + _right) != 0) {
+		return _minimum(*(node + _right));
+	}
+	y = *(node + _parent);
+	while (y != 0 && node == *(y + _right)) {
+		node = y;
+		y = *(y + _parent);
+	}
+	return y;
+}
+
+// left and right should be:
+// _left and _right for a left rotation
+// _right and _left for a right rotation
+void _rotate(int root, int left, int right) {
+	int pivot;
+	int a;
+	int c;
+
+	int temp;
+
+	pivot = *(root + right);
+	a = *(root + left);
+	c = *(pivot + right);
+
+	// swap contents of root and pivot
+	temp = *(pivot + _color);
+	*(pivot + _color) = *(root + _color);
+	*(root + _color) = temp;
+
+	temp = *(pivot + _value);
+	*(pivot + _value) = *(root + _value);
+	*(root + _value) = temp;
+
+	// move B
+	*(pivot + right) = *(pivot + left);
+
+	// move C
+	*(root + right) = c;
+	if (c != 0) {
+		*(c + _parent) = root;
+	}
+
+	// move A
+	*(pivot + left) = a;
+	if (a != 0) {
+		*(a + _parent) = pivot;
+	}
+}
