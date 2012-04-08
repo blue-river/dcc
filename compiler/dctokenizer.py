@@ -38,6 +38,7 @@ class DCTokenizer(object):
 		'COMMA',
 		'DECIMAL',
 		'DECREMENT',
+		'DEREFOFFSET',
 		'DOT',
 		'EQUALS',
 		'GREATEREQUALS',
@@ -85,6 +86,7 @@ class DCTokenizer(object):
 	t_BOOLEANAND = r'&&'
 	t_BOOLEANNOT = r'!'
 	t_BOOLEANOR = r'\|\|'
+	t_DEREFOFFSET = r'->'
 	t_EQUALS = r'=='
 	t_GREATEREQUALS = r'>='
 	t_GREATERTHAN = r'>'
@@ -95,10 +97,10 @@ class DCTokenizer(object):
 	t_NOTEQUALS = r'!='
 	t_OR = r'\|'
 	t_PLUS = r'\+'
-	t_SLASH = r'/'
-	t_XOR = r'\^'
 	t_SHIFTLEFT = r'<<'
 	t_SHIFTRIGHT = r'>>'
+	t_SLASH = r'/'
+	t_XOR = r'\^'
 
 	# delimiters
 	t_COMMA = r','

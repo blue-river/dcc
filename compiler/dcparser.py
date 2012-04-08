@@ -25,6 +25,7 @@ class DCParser(object):
 		('left', 'PLUS', 'MINUS'),
 		('left', 'ASTERISK', 'SLASH'),
 		('right', 'NOT', 'BOOLEANNOT'),
+		('left', 'DEREFOFFSET'),
 	)
 
 # structure
@@ -200,10 +201,6 @@ class DCParser(object):
 		'expression : LEFTPAREN expression RIGHTPAREN'
 		p[0] = p[2]
 
-	def p_dereference(self, p):
-		'expression : ASTERISK expression'
-		p[0] = Dereference(self.filename, p.lineno(1), p[2])
-
 	def p_addressof(self, p):
 		'expression : AMPERSAND identifier'
 		p[0] = AddressOf(self.filename, p.lineno(1), p[2])
@@ -309,6 +306,15 @@ class DCParser(object):
 		'expression : NOT expression'
 		p[0] = Not(self.filename, p.lineno(1), p[2])
 
+	def p_dereference(self, p):
+		'expression : ASTERISK expression'
+		p[0] = Dereference(self.filename, p.lineno(1), p[2])
+
+	def p_dereferenceoffset(self, p):
+		'expression : expression DEREFOFFSET expression'
+		ptr = Addition(self.filename, p.lineno(2), p[1], p[3])
+		p[0] = Dereference(self.filename, p.lineno(1), ptr)
+
 # assignment
 
 	def p_assignment(self, p):
@@ -374,6 +380,11 @@ class DCParser(object):
 	def p_derefassignment(self, p):
 		'statement : ASTERISK expression ASSIGN expression SEMICOLON'
 		p[0] = DerefAssignment(self.filename, p.lineno(3), p[2], p[4])
+
+	def p_derefoffsetassignment(self, p):
+		'statement : expression DEREFOFFSET expression ASSIGN expression SEMICOLON'
+		ptr = Addition(self.filename, p.lineno(2), p[1], p[3])
+		p[0] = DerefAssignment(self.filename, p.lineno(4), ptr, p[5])
 
 # call, return
 
