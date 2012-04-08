@@ -57,6 +57,7 @@ class DCCompiler(object):
 			if options.verboseprogress:
 				print 'Optimizing assembly...'
 
+			asmgenerator.count(program)
 			self.optimizeAsm(options, program)
 
 		if not options.verboseinfo or not options.verboseprogress or not options.optimize:
