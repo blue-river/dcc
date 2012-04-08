@@ -15,7 +15,7 @@ def main():
 	epilog = 'Report bugs and feature requests to zr40.nl@gmail.com'
 	version = '%prog 0.9 dev'
 	parser = OptionParser(usage=usage, description=description, epilog=epilog, version=version)
-	parser.add_option('-m', metavar='PATH', action='append', dest='moduleSearchPath', help='look for referenced modules in PATH', default=[os.path.dirname(__file__) + '/stdlib'])
+	parser.add_option('-m', metavar='PATH', action='append', dest='moduleSearchPath', help='look for referenced modules in PATH', default=[os.path.dirname(os.path.realpath(__file__)) + '/stdlib'])
 	parser.add_option('--no-opt', action='store_false', dest='optimize', help='do not perform optimizations', default=True)
 	parser.add_option('-v', action='store_true', dest='verboseinfo', help='show verbose information', default=False)
 	parser.add_option('-p', action='store_true', dest='verboseprogress', help='show verbose progress', default=False)
