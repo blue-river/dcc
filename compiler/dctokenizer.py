@@ -60,7 +60,10 @@ class DCTokenizer(object):
 		'RIGHTBRACE',
 		'RIGHTPAREN',
 		'SEMICOLON',
+		'SHIFTLEFT',
+		'SHIFTRIGHT',
 		'SLASH',
+		'SLASHASSIGN',
 		'XOR',
 	) + tuple(set(reserved.values()))
 
@@ -73,6 +76,7 @@ class DCTokenizer(object):
 	t_MINUSASSIGN = r'-='
 	t_ORASSIGN = r'\|='
 	t_PLUSASSIGN = r'\+='
+	t_SLASHASSIGN = r'/='
 
 	# operators
 	t_AMPERSAND = r'&'
@@ -93,6 +97,8 @@ class DCTokenizer(object):
 	t_PLUS = r'\+'
 	t_SLASH = r'/'
 	t_XOR = r'\^'
+	t_SHIFTLEFT = r'<<'
+	t_SHIFTRIGHT = r'>>'
 
 	# delimiters
 	t_COMMA = r','

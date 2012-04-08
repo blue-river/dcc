@@ -208,6 +208,60 @@ class Multiplication(ExpressionBase):
 	def stackUsage(self, functions):
 		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
 
+class Division(ExpressionBase):
+	
+	argumentNames = ('left', 'right')
+
+	def transformToAsm(self, containingFunction, containingLoop):
+		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+
+		yield Instruction(Comment, '*')
+
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(DIV, Peek(), TempStorage)
+
+	def stackUsage(self, functions):
+		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
+
+class ShiftLeft(ExpressionBase):
+	
+	argumentNames = ('left', 'right')
+
+	def transformToAsm(self, containingFunction, containingLoop):
+		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+
+		yield Instruction(Comment, '*')
+
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(SHL, Peek(), TempStorage)
+
+	def stackUsage(self, functions):
+		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
+
+class ShiftRight(ExpressionBase):
+	
+	argumentNames = ('left', 'right')
+
+	def transformToAsm(self, containingFunction, containingLoop):
+		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+
+		yield Instruction(Comment, '*')
+
+		yield Instruction(SET, TempStorage, Pop())
+		yield Instruction(SHR, Peek(), TempStorage)
+
+	def stackUsage(self, functions):
+		return max(self.right.stackUsage(functions), self.left.stackUsage(functions) + 1)
+
 class Not(ExpressionBase):
 
 	argumentNames = ('expression',)
@@ -246,9 +300,9 @@ class Subtraction(ExpressionBase):
 	argumentNames = ('left', 'right')
 
 	def transformToAsm(self, containingFunction, containingLoop):
-		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
-			yield instruction
 		for instruction in self.left.transformToAsm(containingFunction, containingLoop):
+			yield instruction
+		for instruction in self.right.transformToAsm(containingFunction, containingLoop):
 			yield instruction
 
 		yield Instruction(Comment, '-')

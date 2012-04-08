@@ -283,7 +283,7 @@ class DCParser(object):
 
 	def p_binaryoperatordivision(self, p):
 		'expression : expression SLASH expression'
-		raise Exception('Not implemented')
+		p[0] = Division(self.filename, p.lineno(2), p[1], p[3])
 
 	def p_binaryoperatorand(self, p):
 		'expression : expression AMPERSAND expression'
@@ -296,6 +296,14 @@ class DCParser(object):
 	def p_binaryoperatorxor(self, p):
 		'expression : expression XOR expression'
 		p[0] = Xor(self.filename, p.lineno(2), p[1], p[3])
+
+	def p_binaryoperatorshiftleft(self, p):
+		'expression : expression SHIFTLEFT expression'
+		p[0] = ShiftLeft(self.filename, p.lineno(2), p[1], p[3])
+
+	def p_binaryoperatorshiftright(self, p):
+		'expression : expression SHIFTRIGHT expression'
+		p[0] = ShiftRight(self.filename, p.lineno(2), p[1], p[3])
 
 	def p_unaryoperatornot(self, p):
 		'expression : NOT expression'
@@ -330,6 +338,13 @@ class DCParser(object):
 		i = Identifier(self.filename, p.lineno(1), p[1])
 		expr = p[3]
 		op = Multiplication(self.filename, p.lineno(2), i, expr)
+		p[0] = Assignment(self.filename, p.lineno(2), p[1], op)
+
+	def p_divideassign(self, p):
+		'statement : identifier SLASHASSIGN expression SEMICOLON'
+		i = Identifier(self.filename, p.lineno(1), p[1])
+		expr = p[3]
+		op = Division(self.filename, p.lineno(2), i, expr)
 		p[0] = Assignment(self.filename, p.lineno(2), p[1], op)
 
 	def p_orassign(self, p):
