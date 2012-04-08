@@ -30,12 +30,11 @@ class AsmOptimizer(object):
 		while self.pos < len(self.program):
 			self.tryRemoveComment()
 
-			#modified |= self.tryOptimizePushPopLocation()
+			modified |= self.tryOptimizePushLocation()
 			modified |= self.tryOptimizePushPop()
 			modified |= self.tryOptimizePushDiscard()
 			modified |= self.tryOptimizeDiscardPush()
 			modified |= self.tryOptimizePeekPop()
-			#modified |= self.tryOptimizeCondSwap()
 			modified |= self.tryOptimizeSetPC()
 			modified |= self.tryOptimizeTailCall()
 			modified |= self.tryOptimizeNoop()
@@ -154,17 +153,38 @@ class AsmOptimizer(object):
 		if self.get(0).opcode == Comment:
 			self.remove(0, 0)
 
+	def tryOptimizePushLocation(self):
+		if not (self.canGet(1)):
+			return False
+
+		push = self.get(0)
+		other = self.get(1)
+
+		if not (push.opcode == SET and isinstance(push.a, Push) and isinstance(push.b, Literal)):
+			return False
+
+		if other.opcode in (JSR, Label) or isinstance(other.a, (Push, Peek, Pop, PC, SP)) or isinstance(other.b, (Pop, Peek, Push, PC, SP)):
+			return False
+
+		if not(isinstance(push.b, Literal)) and push.b.asm() == other.a.asm():
+			return False
+
+		self.remove(0, 0)
+		self.insert(1, push)
+		return True
+
 	def tryOptimizePushDiscard(self):
 		if not self.canGet(1):
 			return False
 
-		if not (self.get(1).opcode == ADD and isinstance(self.get(1).a, SP) and isinstance(self.get(1).b, Literal) and self.get(1).b.value == 1):
+		if not (self.get(1).opcode == ADD and isinstance(self.get(1).a, SP) and isinstance(self.get(1).b, Literal) and self.get(1).b.value >= 1):
 			return False
 
 		if not (self.get(0).opcode in (SET, MOD, AND, BOR, XOR) and isinstance(self.get(0).a, Push) and not isinstance(self.get(0).b, (Push, Pop))):
 				return False
 
-		self.remove(0, 1)
+		self.get(1).b.value -= 1
+		self.remove(0, 0)
 		return True
 
 	def tryOptimizeDiscardPush(self):
@@ -238,38 +258,6 @@ class AsmOptimizer(object):
 		instr.opcode = SET
 		instr.b = instr.a
 		instr.a = PC()
-		return True
-
-	def tryOptimizeCondSwap(self):
-		if not self.canGet(2):
-			return False
-
-		source = self.get(0)
-
-		if source.type[0] != 'J':
-			return False
-
-		next = self.get(1)
-
-		if next.type != 'SJMP rel':
-			return False
-		
-		targetLabel = self.labels[source.args[-1]]
-
-		if self.get(2) != targetLabel:
-			return False
-
-		# invert the jump condition
-		if source.type[1] == 'N':
-			source.type = 'J' + source.type[2:]
-		else:
-			source.type = 'JN' + source.type[1:]
-
-		# swap the jump targets
-		temp = source.args[-1]
-		source.args[-1] = next.args[-1]
-		next.args[-1] = temp
-
 		return True
 
 	def tryOptimizeSetPC(self):
