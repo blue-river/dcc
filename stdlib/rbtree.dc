@@ -241,23 +241,21 @@ void delete(int tree, int node) {
 // not smaller than `value`. If no values equal to or larger than `value`
 // are present, returns null.
 int search(int tree, int value) {
-	int node;
-
-	node = *(tree + _root);
-	if (node == 0) {
+	tree = *(tree + _root);
+	if (tree == 0) {
 		return 0;
 	}
 
-	while (node != 0) {
-		if (*(node + _value) == value) {
-			return node;
-		} else if (*(node + _value) > value) {
-			if (*(node + _left) == 0) {
-				return node;
+	while (tree != 0) {
+		if (*(tree + _value) == value) {
+			return tree;
+		} else if (*(tree + _value) > value) {
+			if (*(tree + _left) == 0) {
+				return tree;
 			}
-			node = *(node + _left);
+			tree = *(tree + _left);
 		} else {
-			node = *(node + _right);
+			tree = *(tree + _right);
 		}
 	}
 }
