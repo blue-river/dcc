@@ -18,7 +18,13 @@ void init(int tree) {
 }
 
 int sizeNeeded(int n) {
-	return metadataSize; // TODO
+	int depth;
+
+	while (n != 0) {
+		depth++;
+		n /= 2;
+	}
+	return metadataSize + (2 << n - 1) * nodeSize;
 }
 
 int value(int node) {
