@@ -258,6 +258,8 @@ int search(int tree, int value) {
 			tree = *(tree + _right);
 		}
 	}
+
+	return 0;
 }
 
 void _transplant(int tree, int u, int v) {
