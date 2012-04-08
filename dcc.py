@@ -39,14 +39,14 @@ def main():
 	def compile():
 		return DCCompiler().compile(options)
 
-	if options.debugCompiler:
+	try:
 		asm = compile()
-	else:
-		try:
-			asm = compile()
-		except CompilerError as e:
-			print e
-			sys.exit(1)
+	except CompilerError as e:
+		if options.debugCompiler:
+			raise
+
+		print e
+		sys.exit(1)
 
 	with open('output.asm', 'w') as outputfile:
 		outputfile.write(asm)
