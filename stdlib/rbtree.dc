@@ -237,6 +237,31 @@ void delete(int tree, int node) {
 	}
 }
 
+// Performs a binary search and returns the node with the smallest value
+// not smaller than `value`. If no values equal to or larger than `value`
+// are present, returns null.
+int search(int tree, int value) {
+	int node;
+
+	node = *(tree + _root);
+	if (node == 0) {
+		return 0;
+	}
+
+	while (node != 0) {
+		if (*(node + _value) == value) {
+			return node;
+		} else if (*(node + _value) > value) {
+			if (*(node + _left) == 0) {
+				return node;
+			}
+			node = *(node + _left);
+		} else {
+			node = *(node + _right);
+		}
+	}
+}
+
 void _transplant(int tree, int u, int v) {
 	if (*(u + _parent) == 0) {
 		*(tree + _root) = v;
